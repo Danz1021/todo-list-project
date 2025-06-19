@@ -648,11 +648,12 @@
         @media (max-width: 768px) {
             body {
                 padding: 8px;
+                background: white !important;
             }
             
             .container {
                 margin: 0;
-                border-radius: 12px;
+                border-radius: 24px;
                 max-width: 100%;
             }
             
@@ -901,41 +902,45 @@
             }
             
             .delete-btn {
-                position: absolute;
-                top: 50%;
-                right: 14px;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                padding: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-                opacity: 1;
-                transform: translateY(-50%);
-                z-index: 3;
-                background: #ff4757;
-                color: white;
-                border: none;
+                position: absolute !important;
+                top: 50% !important;
+                right: 14px !important;
+                width: 28px !important;
+                height: 28px !important;
+                border-radius: 50% !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 14px !important;
+                opacity: 1 !important;
+                transform: translateY(-50%) !important;
+                z-index: 10 !important;
+                background: #ff4757 !important;
+                color: white !important;
+                border: none !important;
+                transition: all 0.3s ease !important;
+            }
+            
+            .delete-btn:hover {
+                background: #ff3742 !important;
+                transform: translateY(-50%) scale(1.1) !important;
+            }
+            
+            .delete-btn:active {
+                transform: translateY(-50%) scale(0.95) !important;
             }
             
             .todo-item.completed .delete-btn {
-                top: 50%;
-                transform: translateY(-50%);
-                position: absolute;
+                position: absolute !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                background: #999 !important;
             }
             
-            .todo-item.completed .priority-badge {
-                top: 50%;
-                transform: translateY(-50%);
-                position: absolute;
-            }
-            
-            .todo-item.completed .todo-checkbox {
-                top: 50%;
-                transform: translateY(-50%);
-                position: absolute;
+            .todo-item.completed .delete-btn:hover {
+                background: #666 !important;
+                transform: translateY(-50%) scale(1.1) !important;
             }
             
             .empty-state {
@@ -1103,8 +1108,8 @@
             renderTodos();
             updateStats();
             
-            // 每30秒變換一次header顏色
-            setInterval(updateHeaderColor, 30000);
+            // 每5秒變換一次header顏色
+            setInterval(updateHeaderColor, 5000);
         });
 
         // 載入待辦事項
