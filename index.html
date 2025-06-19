@@ -196,6 +196,12 @@
             margin-right: 6px;
         }
 
+        #prioritySelect option[value="P0"] { color: #ff4757; }
+        #prioritySelect option[value="P1"] { color: #ff7675; }
+        #prioritySelect option[value="P2"] { color: #fdcb6e; }
+        #prioritySelect option[value="P3"] { color: #6c5ce7; }
+        #prioritySelect option[value="P4"] { color: #74b9ff; }
+
         .stats {
             padding: 24px 30px;
             background: #f8f9fa;
@@ -873,7 +879,7 @@
             .priority-badge {
                 position: absolute;
                 top: 50%;
-                right: 48px;
+                right: 44px;
                 font-size: 10px;
                 padding: 4px 8px;
                 border-radius: 8px;
@@ -904,7 +910,7 @@
             .delete-btn {
                 position: absolute !important;
                 top: 50% !important;
-                right: 14px !important;
+                right: 8px !important;
                 width: 28px !important;
                 height: 28px !important;
                 border-radius: 50% !important;
@@ -988,11 +994,11 @@
             <div class="input-container">
                 <input type="text" id="todoInput" placeholder="輸入今日待辦事項..." maxlength="100">
                 <select id="prioritySelect">
-                    <option value="P0">🔴 P0 最重要</option>
-                    <option value="P1">🟠 P1 重要</option>
-                    <option value="P2" selected>🟡 P2 普通</option>
-                    <option value="P3">🟢 P3 較低</option>
-                    <option value="P4">🔵 P4 最低</option>
+                    <option value="P0">● P0 最重要</option>
+                    <option value="P1">● P1 重要</option>
+                    <option value="P2" selected>● P2 普通</option>
+                    <option value="P3">● P3 較低</option>
+                    <option value="P4">● P4 最低</option>
                 </select>
                 <button id="addBtn"><span class="add-icon">+</span> 新增</button>
             </div>
