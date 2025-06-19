@@ -693,6 +693,8 @@
                 border: 2px solid #e0e0e0;
                 outline: none;
                 transition: border-color 0.3s;
+                height: 54px;
+                box-sizing: border-box;
             }
             
             #todoInput:focus {
@@ -707,6 +709,15 @@
                 border: 2px solid #e0e0e0;
                 background: white;
                 outline: none;
+                height: 54px;
+                box-sizing: border-box;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path fill="%23666" d="M6 8L0 2h12z"/></svg>');
+                background-repeat: no-repeat;
+                background-position: right 16px center;
+                background-size: 12px;
             }
             
             #addBtn {
@@ -715,6 +726,8 @@
                 font-size: 16px;
                 border-radius: 12px;
                 font-weight: 600;
+                height: 54px;
+                box-sizing: border-box;
             }
             
             .stats {
@@ -898,6 +911,24 @@
                 background: #ff4757;
                 color: white;
                 border: none;
+            }
+            
+            .todo-item.completed .delete-btn {
+                top: 50%;
+                transform: translateY(-50%);
+                position: absolute;
+            }
+            
+            .todo-item.completed .priority-badge {
+                top: 50%;
+                transform: translateY(-50%);
+                position: absolute;
+            }
+            
+            .todo-item.completed .todo-checkbox {
+                top: 50%;
+                transform: translateY(-50%);
+                position: absolute;
             }
             
             .empty-state {
