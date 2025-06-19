@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日工作待辦清單</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', '微軟正黑體', sans-serif;
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 25%, #588b8b 50%, #7fb069 75%, #a7c957 100%);
+            background-size: 400% 400%;
+            animation: forestBreeze 20s ease-in-out infinite;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(47, 79, 79, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(85, 107, 47, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(34, 139, 34, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes forestBreeze {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            transition: background 2s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .date {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .daily-quote {
+            font-size: 1em;
+            opacity: 0.95;
+            font-style: italic;
+            margin-top: 15px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 2;
+            animation: quoteSlideIn 1s ease-out;
+        }
+
+        @keyframes quoteSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 0.95;
+                transform: translateY(0);
+            }
+        }
+
+        .daily-quote::before {
+            content: '"';
+            font-size: 2em;
+            opacity: 0.5;
+            position: absolute;
+            left: 10px;
+            top: 5px;
+        }
+
+        .daily-quote::after {
+            content: '"';
+            font-size: 2em;
+            opacity: 0.5;
+            position: absolute;
+            right: 10px;
+            bottom: -5px;
+        }
+
+        .input-section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #todoInput {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #todoInput:focus {
+            border-color: #4facfe;
+        }
+
+        #prioritySelect {
+            padding: 15px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            min-width: 120px;
+        }
+
+        #prioritySelect:focus {
+            border-color: #4facfe;
+        }
+
+        #addBtn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        #addBtn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats {
+            padding: 24px 30px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px; /* 與進度條的間距 */
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .todo-list {
+            padding: 16px 30px 30px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* 自訂滾動條樣式 */
+        .todo-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .todo-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* Firefox 滾動條樣式 */
+        .todo-list {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+        .todo-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 12px; /* 增加項目間距 */
+            padding: 18px 60px 18px 18px; /* 統一內邊距 */
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+            min-height: 60px; /* 確保最小高度一致 */
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .todo-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .todo-item.completed {
+            background: #f8f9fa;
+            opacity: 0.7;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .todo-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-right: 16px;
+            cursor: pointer;
+            accent-color: #4facfe;
+            flex-shrink: 0; /* 防止收縮 */
+            align-self: flex-start;
+            margin-top: 2px; /* 與文字頂部對齊 */
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 16px;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .todo-content {
+            flex: 1;
+            min-width: 0; /* 允許文字截斷 */
+        }
+
+        .todo-time {
+            font-size: 0.8em;
+            color: #888;
+            margin-right: 16px;
+            flex-shrink: 0;
+            align-self: center;
+        }
+
+        .delete-btn {
+            background: transparent;
+            color: #ccc;
+            border: 1px solid #e0e0e0;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .todo-item:hover .delete-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .delete-btn:hover {
+            background: #fee;
+            color: #ff4757;
+            border-color: #ff4757;
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 刪除按鈕的細緻動畫 */
+        .delete-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 71, 87, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+
+        .delete-btn:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 完成狀態的項目中刪除按鈕樣式 */
+        .todo-item.completed .delete-btn {
+            color: #999;
+            border-color: #ddd;
+        }
+
+        .todo-item.completed .delete-btn:hover {
+            background: #f5f5f5;
+            color: #666;
+            border-color: #999;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            font-family: monospace;
+            margin-right: 10px;
+            vertical-align: top;
+            flex-shrink: 0;
+            align-self: flex-start;
+            margin-top: 1px; /* 與文字對齊 */
+            line-height: 1.2;
+        }
+
+        .todo-actions {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .todo-time-mobile {
+            display: none;
+        }
+
+        .priority-P0 { background: #ff4757; color: white; }
+        .priority-P1 { background: #ff7675; color: white; }
+        .priority-P2 { background: #fdcb6e; color: #333; }
+        .priority-P3 { background: #6c5ce7; color: white; }
+        .priority-P4 { background: #74b9ff; color: white; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .progress-section {
+            margin: 0 30px 24px;
+            position: relative;
+            padding-top: 8px; /* 與統計區域的間距 */
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            transition: width 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .progress-fill.milestone-50 {
+            background: linear-gradient(135deg, #ff9500 0%, #ffad33 100%);
+            animation: pulse-orange 1s ease-in-out;
+        }
+
+        .progress-fill.milestone-75 {
+            background: linear-gradient(135deg, #2ed573 0%, #7bed9f 100%);
+            animation: pulse-green 1s ease-in-out;
+        }
+
+        .progress-fill.milestone-100 {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            animation: celebrate 2s ease-in-out;
+        }
+
+        .progress-message {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .progress-message.show {
+            animation: messageSlideIn 3s ease-in-out;
+        }
+
+        .progress-emojis {
+            position: absolute;
+            top: -30px;
+            width: 100%;
+            height: 60px;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .emoji-particle {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 動畫效果 */
+        @keyframes pulse-orange {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.2); box-shadow: 0 0 20px rgba(255, 149, 0, 0.6); }
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.2); box-shadow: 0 0 20px rgba(46, 213, 115, 0.6); }
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scaleY(1); }
+            25% { transform: scaleY(1.3); box-shadow: 0 0 30px rgba(255, 107, 107, 0.8); }
+            50% { transform: scaleY(1.1); box-shadow: 0 0 25px rgba(255, 167, 38, 0.8); }
+            75% { transform: scaleY(1.3); box-shadow: 0 0 30px rgba(255, 107, 107, 0.8); }
+        }
+
+        @keyframes messageSlideIn {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        @keyframes emojiFloat {
+            0% { 
+                opacity: 0; 
+                transform: translateY(0) rotate(0deg) scale(0.5); 
+            }
+            20% { 
+                opacity: 1; 
+                transform: translateY(-20px) rotate(180deg) scale(1); 
+            }
+            80% { 
+                opacity: 1; 
+                transform: translateY(-40px) rotate(300deg) scale(0.8); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateY(-60px) rotate(360deg) scale(0.3); 
+            }
+        }
+
+        @keyframes emojiCelebrate {
+            0% { 
+                opacity: 0; 
+                transform: translateY(0) scale(0.3); 
+            }
+            15% { 
+                opacity: 1; 
+                transform: translateY(-30px) scale(1.2); 
+            }
+            30% { 
+                transform: translateY(-45px) scale(1); 
+            }
+            60% { 
+                transform: translateY(-55px) scale(1.1); 
+            }
+            80% { 
+                opacity: 1; 
+                transform: translateY(-65px) scale(0.9); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateY(-80px) scale(0.3); 
+            }
+        }
+
+        .controls {
+            padding: 24px 30px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 8px; /* 與待辦列表的間距 */
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            margin-right: 12px;
+            min-width: 80px;
+        }
+
+        .control-btn, .priority-filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .control-btn:hover, .priority-filter-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .control-btn.active {
+            background: #4facfe;
+            color: white;
+            border-color: #4facfe;
+        }
+
+        .priority-filter-btn.active {
+            background: #6c5ce7;
+            color: white;
+            border-color: #6c5ce7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .daily-quote {
+                font-size: 0.9em;
+                padding: 12px 16px;
+                margin-top: 12px;
+            }
+            
+            .daily-quote::before,
+            .daily-quote::after {
+                font-size: 1.5em;
+            }
+            
+            .input-section {
+                padding: 20px;
+            }
+            
+            .input-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            #prioritySelect {
+                min-width: 100%;
+            }
+            
+            .stats {
+                padding: 18px 20px;
+            }
+            
+            .todo-list {
+                padding: 12px 20px 20px;
+                max-height: 300px;
+            }
+            
+            .filter-group {
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .filter-label {
+                min-width: auto;
+                margin-right: 8px;
+            }
+            
+            .controls {
+                padding: 18px 20px;
+                gap: 12px;
+            }
+            
+            .todo-item {
+                padding: 16px 50px 16px 16px;
+                margin-bottom: 10px;
+                min-height: 56px;
+            }
+            
+            .progress-section {
+                margin: 0 20px 18px;
+                padding-top: 6px;
+            }
+            
+            .todo-item .delete-btn {
+                opacity: 1;
+                transform: scale(1);
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+            
+            .todo-checkbox {
+                width: 16px;
+                height: 16px;
+                margin-right: 14px;
+                margin-top: 1px;
+            }
+            
+            .priority-badge {
+                font-size: 9px;
+                padding: 3px 6px;
+                margin-right: 8px;
+                align-self: flex-start;
+                margin-top: 1px;
+            }
+            
+            .todo-text {
+                flex-direction: row;
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+            
+            .todo-content {
+                width: 100%;
+            }
+            
+            .todo-time {
+                display: none;
+            }
+            
+            .todo-time-mobile {
+                display: block;
+                font-size: 0.7em;
+                color: #888;
+                margin-top: 6px;
+                padding-left: 2px;
+            }
+            
+            .progress-section {
+                margin: 0 20px 15px;
+            }
+            
+            .progress-message {
+                font-size: 12px;
+                padding: 6px 12px;
+                top: -35px;
+            }
+            
+            .progress-emojis {
+                top: -25px;
+                height: 50px;
+            }
+            
+            .emoji-particle {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 今日工作待辦</h1>
+            <div class="date" id="currentDate"></div>
+            <div class="daily-quote" id="dailyQuote"></div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-container">
+                <input type="text" id="todoInput" placeholder="輸入今日待辦事項..." maxlength="100">
+                <select id="prioritySelect">
+                    <option value="P0">🔴 P0 最重要</option>
+                    <option value="P1">🟠 P1 重要</option>
+                    <option value="P2" selected>🟡 P2 普通</option>
+                    <option value="P3">🟢 P3 較低</option>
+                    <option value="P4">🔵 P4 最低</option>
+                </select>
+                <button id="addBtn">➕ 新增</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalTasks">0</div>
+                <div class="stat-label">總任務</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="completedTasks">0</div>
+                <div class="stat-label">已完成</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="pendingTasks">0</div>
+                <div class="stat-label">待完成</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-message" id="progressMessage"></div>
+            <div class="progress-emojis" id="progressEmojis"></div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-group">
+                <label class="filter-label">狀態篩選：</label>
+                <button class="control-btn active" data-filter="all">全部</button>
+                <button class="control-btn" data-filter="pending">待完成</button>
+                <button class="control-btn" data-filter="completed">已完成</button>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">優先級篩選：</label>
+                <button class="priority-filter-btn active" data-priority="all">全部</button>
+                <button class="priority-filter-btn" data-priority="P0">🔴 P0</button>
+                <button class="priority-filter-btn" data-priority="P1">🟠 P1</button>
+                <button class="priority-filter-btn" data-priority="P2">🟡 P2</button>
+                <button class="priority-filter-btn" data-priority="P3">🟢 P3</button>
+                <button class="priority-filter-btn" data-priority="P4">🔵 P4</button>
+            </div>
+        </div>
+
+        <div class="todo-list" id="todoList">
+            <div class="empty-state" id="emptyState">
+                <div style="font-size: 3em;">📋</div>
+                <h3>還沒有待辦事項</h3>
+                <p>開始新增您今日的工作計劃吧！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let todos = [];
+        let currentFilter = 'all';
+        let currentPriorityFilter = 'all';
+        
+        // 激勵語錄庫
+        const motivationalQuotes = [
+            "成功是一個過程，不是目的地。 - 比爾·蓋茨",
+            "堅持不懈地追求目標，你就會成功。 - 拿破崙·希爾",
+            "每一天都是一個新的開始，把握今天的機會。",
+            "相信自己，你可以做到任何事情。",
+            "困難只是成長路上的墊腳石。",
+            "今天的努力，是明天成功的基石。",
+            "夢想不會逃跑，會逃跑的永遠都是自己。",
+            "行動是成功的階梯，行動越多，登得越高。",
+            "世界會向那些有目標和遠見的人讓路。",
+            "做你該做的事，結果會照顧自己。",
+            "成功源於每一個小小的進步。",
+            "專注於可能性，而不是問題。",
+            "你的限制只存在於你的思維中。",
+            "每個專家都曾經是初學者。",
+            "今天是你人生故事中的重要一頁。",
+            "偉大的成就需要偉大的野心。 - 愛默生",
+            "機會不會主動找到你，你必須主動尋找機會。",
+            "小步前進，也是進步。",
+            "堅持努力，直到你感到驕傲。",
+            "你的態度決定你的高度。"
+        ];
+
+        // 隨機顏色庫
+        const colorGradients = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+            'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)',
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+            'linear-gradient(135deg, #ff8a80 0%, #ffb74d 100%)',
+            'linear-gradient(135deg, #81c784 0%, #aed581 100%)',
+            'linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%)',
+            'linear-gradient(135deg, #ba68c8 0%, #ab47bc 100%)',
+            'linear-gradient(135deg, #4db6ac 0%, #26a69a 100%)'
+        ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTodos();
+            updateDate();
+            updateDailyQuote();
+            updateHeaderColor();
+            checkDate();
+            bindEvents();
+            renderTodos();
+            updateStats();
+            
+            // 每30秒變換一次header顏色
+            setInterval(updateHeaderColor, 30000);
+        });
+
+        // 載入待辦事項
+        function loadTodos() {
+            const saved = localStorage.getItem('dailyTodos');
+            todos = saved ? JSON.parse(saved) : [];
+            
+            // 升級舊資料格式，確保所有項目都有正確的優先級
+            todos = todos.map(todo => {
+                if (!todo.priority || !todo.priority.startsWith('P')) {
+                    // 舊格式轉換
+                    const oldPriority = todo.priority;
+                    if (oldPriority === 'high') todo.priority = 'P0';
+                    else if (oldPriority === 'medium') todo.priority = 'P1';
+                    else todo.priority = 'P2';
+                }
+                
+                // 確保有 priorityNumber
+                if (!todo.priorityNumber) {
+                    todo.priorityNumber = getPriorityNumber(todo.priority);
+                }
+                
+                return todo;
+            });
+            
+            // 按優先級排序
+            sortTodosByPriority();
+        }
+
+        // 儲存待辦事項
+        function saveTodos() {
+            localStorage.setItem('dailyTodos', JSON.stringify(todos));
+        }
+
+        // 按優先級和時間排序所有待辦事項
+        function sortTodosByPriority() {
+            todos.sort((a, b) => {
+                const aPriority = a.priorityNumber || getPriorityNumber(a.priority || 'P2');
+                const bPriority = b.priorityNumber || getPriorityNumber(b.priority || 'P2');
+                
+                // 優先級相同時，按創建時間降序排序（新的在上）
+                if (aPriority === bPriority) {
+                    // 使用id來排序，因為id包含時間戳，較大的id表示較新
+                    return b.id - a.id;
+                }
+                
+                return aPriority - bPriority;
+            });
+        }
+
+        // 更新日期
+        function updateDate() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                weekday: 'long' 
+            };
+            document.getElementById('currentDate').textContent = 
+                now.toLocaleDateString('zh-TW', options);
+        }
+
+        // 更新每日語錄
+        function updateDailyQuote() {
+            const quoteElement = document.getElementById('dailyQuote');
+            if (!quoteElement) return;
+
+            // 使用日期作為種子，確保同一天顯示相同的語錄
+            const today = new Date();
+            const dateString = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+            const seed = dateString.split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+            }, 0);
+            
+            const quoteIndex = Math.abs(seed) % motivationalQuotes.length;
+            const selectedQuote = motivationalQuotes[quoteIndex];
+            
+            quoteElement.textContent = selectedQuote;
+            console.log('Daily quote updated:', selectedQuote);
+        }
+
+        // 更新Header顏色
+        function updateHeaderColor() {
+            const headerElement = document.querySelector('.header');
+            if (!headerElement) return;
+
+            const randomIndex = Math.floor(Math.random() * colorGradients.length);
+            const newGradient = colorGradients[randomIndex];
+            
+            headerElement.style.background = newGradient;
+            console.log('Header color updated:', newGradient);
+        }
+
+        // 檢查日期變更
+        function checkDate() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('lastTodoDate');
+            
+            if (lastDate && lastDate !== today) {
+                todos = [];
+                saveTodos();
+            }
+            
+            localStorage.setItem('lastTodoDate', today);
+        }
+
+        // 綁定事件
+        function bindEvents() {
+            const todoInput = document.getElementById('todoInput');
+            const addBtn = document.getElementById('addBtn');
+            const filterBtns = document.querySelectorAll('[data-filter]');
+            const priorityFilterBtns = document.querySelectorAll('[data-priority]');
+
+            addBtn.addEventListener('click', addTodo);
+            todoInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTodo();
+                }
+            });
+
+            // 狀態篩選
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilter = e.target.dataset.filter;
+                    renderTodos();
+                });
+            });
+
+            // 優先級篩選
+            priorityFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    priorityFilterBtns.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentPriorityFilter = e.target.dataset.priority;
+                    renderTodos();
+                });
+            });
+        }
+
+        // 新增待辦事項
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const prioritySelect = document.getElementById('prioritySelect');
+            const text = input.value.trim();
+            
+            if (!text) {
+                input.focus();
+                return;
+            }
+
+            const selectedPriority = prioritySelect.value;
+
+            const todo = {
+                id: Date.now() + Math.random(), // 確保唯一性
+                text: text,
+                completed: false,
+                createdAt: new Date().toLocaleTimeString('zh-TW', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }),
+                priority: selectedPriority,
+                priorityNumber: getPriorityNumber(selectedPriority)
+            };
+
+            // 按優先級排序插入
+            insertTodoByPriority(todo);
+            
+            // 清空輸入框，保持優先級選擇
+            input.value = '';
+            
+            // 立即更新
+            saveTodos();
+            renderTodos();
+            updateStats();
+            
+            console.log('Todo added:', todo); // 調試用
+        }
+
+        // 獲取優先級數字 (用於排序)
+        function getPriorityNumber(priority) {
+            const priorityMap = {
+                'P0': 0,
+                'P1': 1,
+                'P2': 2,
+                'P3': 3,
+                'P4': 4
+            };
+            return priorityMap[priority] || 2; // 預設為P2
+        }
+
+        // 獲取優先級顯示標籤
+        function getPriorityLabel(priority) {
+            const labelMap = {
+                'P0': '🔴 P0',
+                'P1': '🟠 P1',
+                'P2': '🟡 P2',
+                'P3': '🟢 P3',
+                'P4': '🔵 P4'
+            };
+            return labelMap[priority] || '🟡 P2';
+        }
+
+        // 按優先級排序插入待辦事項
+        function insertTodoByPriority(newTodo) {
+            // 直接加入到陣列開頭，然後重新排序
+            todos.unshift(newTodo);
+            sortTodosByPriority();
+            console.log('Todo added and sorted with priority', newTodo.priority);
+        }
+
+        // 舊的優先級檢測函數 (保留作為備用)
+        function getOldPriority(text) {
+            const highKeywords = ['緊急', '重要', '趕快', '馬上', '立即'];
+            const mediumKeywords = ['今天', '盡快', '需要'];
+            
+            const lowerText = text.toLowerCase();
+            
+            if (highKeywords.some(keyword => lowerText.includes(keyword))) {
+                return 'high';
+            } else if (mediumKeywords.some(keyword => lowerText.includes(keyword))) {
+                return 'medium';
+            }
+            return 'low';
+        }
+
+        // 切換完成狀態
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id == id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+                updateStats();
+                console.log('Todo toggled:', id, todo.completed); // 調試用
+            }
+        }
+
+        // 刪除待辦事項
+        function deleteTodo(id) {
+            if (confirm('確定要刪除這個待辦事項嗎？')) {
+                const index = todos.findIndex(t => t.id == id);
+                if (index !== -1) {
+                    const deletedTodo = todos[index];
+                    todos.splice(index, 1);
+                    
+                    console.log('Todo deleted:', deletedTodo); // 調試用
+                    console.log('Todos array after deletion:', todos);
+                    
+                    // 立即保存和更新
+                    saveTodos();
+                    updateStats(); // 先更新統計
+                    renderTodos(); // 再渲染
+                } else {
+                    console.log('Todo not found for deletion:', id);
+                }
+            }
+        }
+
+        // 獲取過濾後的待辦事項
+        function getFilteredTodos() {
+            let filtered = todos;
+
+            // 按完成狀態篩選
+            switch (currentFilter) {
+                case 'pending':
+                    filtered = filtered.filter(t => !t.completed);
+                    break;
+                case 'completed':
+                    filtered = filtered.filter(t => t.completed);
+                    break;
+            }
+
+            // 按優先級篩選
+            if (currentPriorityFilter !== 'all') {
+                filtered = filtered.filter(t => t.priority === currentPriorityFilter);
+            }
+
+            return filtered;
+        }
+
+        // 渲染待辦事項
+        function renderTodos() {
+            const todoList = document.getElementById('todoList');
+            const emptyState = document.getElementById('emptyState');
+            const filteredTodos = getFilteredTodos();
+
+            console.log('Rendering todos:', filteredTodos.length, 'Total todos:', todos.length); // 調試用
+
+            // 清空列表
+            todoList.innerHTML = '';
+
+            if (filteredTodos.length === 0) {
+                // 確保空狀態顯示時也更新統計
+                if (todos.length === 0) {
+                    console.log('Empty todos list detected, updating stats');
+                    updateStats();
+                }
+                todoList.appendChild(emptyState);
+                return;
+            }
+
+            // 創建待辦項目
+            filteredTodos.forEach(todo => {
+                const todoItem = createTodoItem(todo);
+                todoList.appendChild(todoItem);
+            });
+        }
+
+        // 創建待辦項目元素
+        function createTodoItem(todo) {
+            const todoItem = document.createElement('div');
+            todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+            todoItem.dataset.id = todo.id;
+            
+            const priorityLabel = getPriorityLabel(todo.priority);
+            
+            todoItem.innerHTML = `
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
+                <div class="todo-text">
+                    <div class="priority-badge priority-${todo.priority}">
+                        ${priorityLabel}
+                    </div>
+                    <div class="todo-content">
+                        ${escapeHtml(todo.text)}
+                        <div class="todo-time-mobile">${todo.createdAt}</div>
+                    </div>
+                </div>
+                <div class="todo-time">${todo.createdAt}</div>
+                <div class="todo-actions">
+                    <button class="delete-btn">×</button>
+                </div>
+            `;
+            
+            // 綁定事件
+            const checkbox = todoItem.querySelector('.todo-checkbox');
+            const deleteBtn = todoItem.querySelector('.delete-btn');
+            
+            checkbox.addEventListener('change', function() {
+                toggleTodo(todo.id);
+            });
+            
+            deleteBtn.addEventListener('click', function() {
+                deleteTodo(todo.id);
+            });
+            
+            return todoItem;
+        }
+
+        // 更新統計
+        function updateStats() {
+            const total = todos.length;
+            const completed = todos.filter(t => t.completed).length;
+            const pending = total - completed;
+            const newProgress = total > 0 ? (completed / total) * 100 : 0;
+
+            // 調試輸出
+            console.log('UpdateStats - Total:', total, 'Completed:', completed, 'Pending:', pending, 'Progress:', newProgress);
+
+            // 確保元素存在後再更新
+            const totalElement = document.getElementById('totalTasks');
+            const completedElement = document.getElementById('completedTasks');
+            const pendingElement = document.getElementById('pendingTasks');
+            const progressElement = document.getElementById('progressFill');
+
+            if (totalElement) totalElement.textContent = total;
+            if (completedElement) completedElement.textContent = completed;
+            if (pendingElement) pendingElement.textContent = pending;
+
+            if (progressElement) {
+                const oldProgress = parseFloat(progressElement.style.width) || 0;
+                progressElement.style.width = `${newProgress}%`;
+                
+                // 觸發進度動畫
+                triggerProgressAnimation(oldProgress, newProgress);
+            }
+        }
+
+        // 觸發進度動畫
+        function triggerProgressAnimation(oldProgress, newProgress) {
+            const progressElement = document.getElementById('progressFill');
+            const messageElement = document.getElementById('progressMessage');
+            const emojisContainer = document.getElementById('progressEmojis');
+
+            if (!progressElement) return;
+
+            // 清除之前的動畫類別
+            progressElement.classList.remove('milestone-50', 'milestone-75', 'milestone-100');
+
+            // 檢查是否達到里程碑
+            const milestones = [
+                { threshold: 25, reached: oldProgress < 25 && newProgress >= 25, message: '💪 不錯的開始！', emojis: ['💪', '🌟', '👍'] },
+                { threshold: 50, reached: oldProgress < 50 && newProgress >= 50, message: '🔥 已完成一半！加油！', emojis: ['🔥', '💪', '⚡', '🌟'] },
+                { threshold: 75, reached: oldProgress < 75 && newProgress >= 75, message: '🎯 快完成了！繼續努力！', emojis: ['🎯', '🚀', '⭐', '💎'] },
+                { threshold: 100, reached: oldProgress < 100 && newProgress >= 100, message: '🎉 太棒了！今天全部完成！', emojis: ['🎉', '🏆', '✨', '🎊', '🥳', '🌟'] }
+            ];
+
+            milestones.forEach(milestone => {
+                if (milestone.reached) {
+                    console.log(`Milestone reached: ${milestone.threshold}%`);
+                    
+                    // 添加進度條動畫類別
+                    if (milestone.threshold === 50) {
+                        progressElement.classList.add('milestone-50');
+                    } else if (milestone.threshold === 75) {
+                        progressElement.classList.add('milestone-75');
+                    } else if (milestone.threshold === 100) {
+                        progressElement.classList.add('milestone-100');
+                    }
+
+                    // 顯示訊息
+                    showProgressMessage(milestone.message);
+
+                    // 創建emoji動畫
+                    createEmojiAnimation(milestone.emojis, milestone.threshold === 100);
+                }
+            });
+        }
+
+        // 顯示進度訊息
+        function showProgressMessage(message) {
+            const messageElement = document.getElementById('progressMessage');
+            if (!messageElement) return;
+
+            messageElement.textContent = message;
+            messageElement.classList.remove('show');
+            
+            // 強制重繪
+            messageElement.offsetHeight;
+            
+            messageElement.classList.add('show');
+        }
+
+        // 創建emoji動畫
+        function createEmojiAnimation(emojis, isCelebration = false) {
+            const emojisContainer = document.getElementById('progressEmojis');
+            if (!emojisContainer) return;
+
+            // 清除之前的emojis
+            emojisContainer.innerHTML = '';
+
+            const emojiCount = isCelebration ? 12 : 6;
+            
+            for (let i = 0; i < emojiCount; i++) {
+                const emoji = document.createElement('div');
+                emoji.className = 'emoji-particle';
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                
+                // 隨機位置
+                emoji.style.left = Math.random() * 100 + '%';
+                emoji.style.animationDelay = (Math.random() * 0.5) + 's';
+                emoji.style.animationDuration = (isCelebration ? 2.5 : 2) + 's';
+                emoji.style.animation = isCelebration ? 
+                    `emojiCelebrate ${2.5 + Math.random()}s ease-out forwards` :
+                    `emojiFloat ${2 + Math.random()}s ease-out forwards`;
+                
+                emojisContainer.appendChild(emoji);
+            }
+
+            // 清理emoji元素
+            setTimeout(() => {
+                emojisContainer.innerHTML = '';
+            }, isCelebration ? 3000 : 2500);
+        }
+
+        // HTML 轉義
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 頁面可見性變化時更新
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                updateDate();
+                updateDailyQuote();
+                updateHeaderColor();
+                checkDate();
+            }
+        });
+    </script>
+</body>
+</html>
