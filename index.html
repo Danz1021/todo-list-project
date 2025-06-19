@@ -189,6 +189,13 @@
             transform: translateY(-2px);
         }
 
+        .add-icon {
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 6px;
+        }
+
         .stats {
             padding: 24px 30px;
             background: #f8f9fa;
@@ -982,7 +989,7 @@
                     <option value="P3">🟢 P3 較低</option>
                     <option value="P4">🔵 P4 最低</option>
                 </select>
-                <button id="addBtn">➕ 新增</button>
+                <button id="addBtn"><span class="add-icon">+</span> 新增</button>
             </div>
         </div>
 
@@ -1166,15 +1173,10 @@
             const quoteElement = document.getElementById('dailyQuote');
             if (!quoteElement) return;
 
-            // 使用日期作為種子，確保同一天顯示相同的調酒推薦
-            const today = new Date();
-            const dateString = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
-            const seed = dateString.split('').reduce((a, b) => {
-                a = ((a << 5) - a) + b.charCodeAt(0);
-                return a & a;
-            }, 0);
-            
-            const cocktailIndex = Math.abs(seed) % dailyCocktails.length;
+            // 使用當前時間戳確保每次重整都會刷新不同的調酒推薦
+            const now = new Date();
+            const timestamp = now.getTime();
+            const cocktailIndex = Math.floor(Math.random() * dailyCocktails.length);
             const selectedCocktail = dailyCocktails[cocktailIndex];
             
             quoteElement.textContent = selectedCocktail;
