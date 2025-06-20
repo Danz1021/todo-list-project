@@ -65,6 +65,11 @@ class FirebaseSync {
         } else {
             console.log('User signed out');
             this.syncEnabled = false;
+            this.currentUser = null; // 明確清除用戶狀態
+            
+            // 停止即時同步
+            this.stopRealtimeSync();
+            
             this.updateSyncUI(false, null);
         }
     }
@@ -170,7 +175,7 @@ class FirebaseSync {
             setTimeout(() => {
                 this.isUpdatingCloud = false;
                 console.log('重新啟用即時監聽');
-            }, 3000); // 增加到3秒
+            }, 5000); // 增加到5秒，減少API調用頻率
             
             return true;
         } catch (error) {
@@ -279,6 +284,22 @@ class FirebaseSync {
             
             // 停止即時同步
             this.stopRealtimeSync();
+            
+            // 觸發UI更新到登出狀態
+            if (typeof window.renderTodos === 'function') {
+                try {
+                    window.renderTodos();
+                } catch (error) {
+                    console.error('登出後UI更新失敗:', error);
+                }
+            }
+            if (typeof window.updateStats === 'function') {
+                try {
+                    window.updateStats();
+                } catch (error) {
+                    console.error('登出後統計更新失敗:', error);
+                }
+            }
         }
     }
 

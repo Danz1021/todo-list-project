@@ -1398,22 +1398,33 @@
          * 處理登出操作
          */
         async function handleLogout() {
+            console.log('開始登出流程...');
+            
+            // 清空本地狀態
+            todos = [];
+            localStorage.removeItem('dailyTodos');
+            
+            // 清理同步定時器
+            if (window.cloudSyncTimer) {
+                clearTimeout(window.cloudSyncTimer);
+                window.cloudSyncTimer = null;
+            }
+            
+            // Firebase登出 - 使用try/catch包裝，但不阻止流程
             try {
                 if (window.firebaseSync) {
                     await window.firebaseSync.signOut();
                 }
-                
-                // 清空 Todo 列表
-                todos = [];
-                localStorage.removeItem('dailyTodos');
-                renderTodos();
-                updateStats();
-                
-                console.log('已清空 Todo 列表並登出');
+                console.log('Firebase登出成功');
             } catch (error) {
-                console.error('登出失敗:', error);
-                alert('登出失敗：' + (error.message || '未知錯誤'));
+                console.error('Firebase登出錯誤:', error);
+                // 不顯示錯誤給用戶，因為本地狀態已清理
             }
+            
+            // 強制重新整理頁面，確保乾淨狀態
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         }
 
         /**
@@ -1521,9 +1532,19 @@
             
             // 雲端同步（如果已啟用且不跳過）
             if (!skipCloudSync && window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
-                window.firebaseSync.saveTodosToCloud(todos).catch(error => {
-                    console.error('雲端同步失敗:', error);
-                });
+                // 節流雲端同步，避免API配額超限
+                if (window.cloudSyncTimer) {
+                    clearTimeout(window.cloudSyncTimer);
+                }
+                
+                window.cloudSyncTimer = setTimeout(() => {
+                    window.firebaseSync.saveTodosToCloud(todos).catch(error => {
+                        console.error('雲端同步失敗:', error);
+                        if (error.code === 'resource-exhausted') {
+                            console.warn('Firebase配額超限，暫停同步');
+                        }
+                    });
+                }, 1000); // 1秒節流
             }
         }
 
@@ -1839,7 +1860,13 @@
          */
         function renderTodos() {
             const todoList = document.getElementById('todoList');
-            const emptyState = document.getElementById('emptyState');
+            
+            // 檢查todoList是否存在
+            if (!todoList) {
+                console.error('todoList element not found');
+                return;
+            }
+            
             const filteredTodos = getFilteredTodos();
 
             console.log('Rendering todos:', filteredTodos.length, 'Total todos:', todos.length); // 調試用
@@ -1853,14 +1880,47 @@
                     console.log('Empty todos list detected, updating stats');
                     updateStats();
                 }
-                todoList.appendChild(emptyState);
+                
+                // 創建新的空狀態元素，避免DOM衝突
+                try {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.className = 'empty-state';
+                    emptyMessage.innerHTML = `
+                        <div class="empty-icon">📝</div>
+                        <p>還沒有任何待辦事項</p>
+                        <p class="empty-hint">開始新增你的第一個任務吧！</p>
+                    `;
+                    
+                    if (emptyMessage instanceof Node && todoList instanceof Node) {
+                        todoList.appendChild(emptyMessage);
+                    } else {
+                        console.error('Invalid DOM elements for empty state');
+                    }
+                } catch (domError) {
+                    console.error('DOM操作錯誤:', domError);
+                }
                 return;
             }
 
             // 創建待辦項目
             filteredTodos.forEach(todo => {
-                const todoItem = createTodoItem(todo);
-                todoList.appendChild(todoItem);
+                try {
+                    if (!todo || typeof todo !== 'object') {
+                        console.error('Invalid todo object:', todo);
+                        return;
+                    }
+                    
+                    const todoItem = createTodoItem(todo);
+                    
+                    if (!todoItem || !(todoItem instanceof Node)) {
+                        console.error('createTodoItem did not return a valid Node:', todoItem);
+                        return;
+                    }
+                    
+                    todoList.appendChild(todoItem);
+                } catch (error) {
+                    console.error('Error creating todo item:', error, todo);
+                }
             });
         }
 
