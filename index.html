@@ -301,20 +301,7 @@
             color: #888;
         }
 
-        .todo-item.completed .delete-btn {
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .todo-item.completed .priority-badge {
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .todo-item.completed .todo-checkbox {
-            top: 50%;
-            transform: translateY(-50%);
-        }
+        /* 桌面版completed狀態已由!important樣式處理 */
 
         .todo-checkbox {
             width: 18px;
@@ -860,13 +847,15 @@
             }
             
             .todo-checkbox {
-                position: absolute;
-                top: 50%;
+                position: absolute !important;
+                top: 50% !important;
                 left: 16px;
                 width: 20px;
                 height: 20px;
-                margin: 0;
-                transform: translateY(-50%);
+                margin: 0 !important;
+                transform: translateY(-50%) !important;
+                align-self: unset !important;
+                margin-top: 0 !important;
             }
             
             .todo-text {
@@ -877,15 +866,18 @@
             }
             
             .priority-badge {
-                position: absolute;
-                top: 50%;
+                position: absolute !important;
+                top: 50% !important;
                 right: 44px;
                 font-size: 10px;
                 padding: 4px 8px;
                 border-radius: 8px;
                 z-index: 2;
                 font-weight: bold;
-                transform: translateY(-50%);
+                transform: translateY(-50%) !important;
+                margin-right: 0 !important;
+                vertical-align: unset !important;
+                align-self: unset !important;
             }
             
             .todo-content {
