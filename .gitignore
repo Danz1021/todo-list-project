@@ -47,3 +47,13 @@ temp/
 # Local development
 localhost.log
 *.local
+
+# Firebase 配置檔案（包含敏感資訊）
+firebase-config.js
+firebase-config.local.js
+
+# Firebase 快取和設定
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日工作待辦清單</title>
+    <title>☀️ Sunny的酒空清單</title>
     <style>
         * {
             margin: 0;
@@ -980,6 +980,118 @@
                 font-size: 16px;
             }
         }
+
+        /* Firebase 同步相關樣式 */
+        .sync-section {
+            padding: 16px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sync-status {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sync-status.logged-in {
+            color: #28a745;
+        }
+
+        .sync-status.logged-out {
+            color: #6c757d;
+        }
+
+        .sync-status::before {
+            content: '●';
+            font-size: 12px;
+        }
+
+        .sync-status.logged-in::before {
+            color: #28a745;
+        }
+
+        .sync-status.logged-out::before {
+            color: #dc3545;
+        }
+
+        .sync-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .sync-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+            width: 200px;
+        }
+
+        .sync-input:focus {
+            border-color: #4facfe;
+        }
+
+        .sync-btn, .logout-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 600;
+        }
+
+        .sync-btn {
+            background: #4facfe;
+            color: white;
+        }
+
+        .sync-btn:hover {
+            background: #3b9bfe;
+        }
+
+        .sync-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        @media (max-width: 768px) {
+            .sync-section {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px 20px;
+            }
+
+            .sync-container {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .sync-input {
+                flex: 1;
+                min-width: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -988,6 +1100,15 @@
             <h1>☀️ Sunny的酒空清單</h1>
             <div class="date" id="currentDate"></div>
             <div class="daily-quote" id="dailyQuote"></div>
+        </div>
+
+        <div class="sync-section">
+            <div class="sync-status" id="syncStatus">未同步</div>
+            <div class="sync-container" id="syncContainer">
+                <input type="email" class="sync-input" id="syncEmail" placeholder="輸入 email 開始同步">
+                <button class="sync-btn" id="syncBtn">登入/註冊</button>
+            </div>
+            <button class="logout-btn" id="logoutBtn" style="display: none;">登出</button>
         </div>
 
         <div class="input-section">
@@ -1054,6 +1175,17 @@
         </div>
     </div>
 
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase 配置 -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Firebase 同步功能 -->
+    <script src="firebase-sync.js"></script>
+
     <script>
         /**
          * 全域變數
@@ -1115,19 +1247,213 @@
          * 應用程式初始化函式
          * 當 DOM 載入完成後執行所有初始化程序
          */
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 初始化 Firebase
+            await initializeFirebase();
+            
             loadTodos();
             updateDate();
             updateDailyQuote();
             updateHeaderColor();
             checkDate();
             bindEvents();
+            bindSyncEvents();
             renderTodos();
             updateStats();
             
             // 每5秒變換一次header顏色
             setInterval(updateHeaderColor, 5000);
         });
+
+        /**
+         * 初始化 Firebase 服務
+         * @returns {Promise<void>}
+         */
+        async function initializeFirebase() {
+            try {
+                if (typeof window.firebaseSync !== 'undefined') {
+                    const initialized = await window.firebaseSync.initialize();
+                    if (initialized) {
+                        console.log('Firebase 服務初始化成功');
+                    } else {
+                        console.warn('Firebase 服務初始化失敗');
+                    }
+                } else {
+                    console.warn('Firebase 同步模組未載入');
+                }
+            } catch (error) {
+                console.error('Firebase 初始化錯誤:', error);
+            }
+        }
+
+        /**
+         * 綁定同步相關事件
+         */
+        function bindSyncEvents() {
+            const syncBtn = document.getElementById('syncBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const syncEmail = document.getElementById('syncEmail');
+
+            if (syncBtn) {
+                syncBtn.addEventListener('click', handleSyncAction);
+            }
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+
+            if (syncEmail) {
+                syncEmail.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleSyncAction();
+                    }
+                });
+            }
+        }
+
+        /**
+         * 處理同步登入/註冊操作
+         */
+        async function handleSyncAction() {
+            const emailInput = document.getElementById('syncEmail');
+            const syncBtn = document.getElementById('syncBtn');
+            
+            if (!emailInput || !syncBtn) return;
+
+            const email = emailInput.value.trim();
+            if (!email) {
+                alert('請輸入 email 地址');
+                return;
+            }
+
+            // 簡單的 email 格式驗證
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('請輸入有效的 email 地址');
+                return;
+            }
+
+            syncBtn.disabled = true;
+            syncBtn.textContent = '處理中...';
+
+            try {
+                if (window.firebaseSync && window.firebaseSync.isReady()) {
+                    // 自動生成簡單密碼
+                    const password = generateSimplePassword(email);
+                    
+                    try {
+                        // 先嘗試登入
+                        await window.firebaseSync.signIn(email, password);
+                    } catch (signInError) {
+                        if (signInError.code === 'auth/user-not-found' || 
+                            signInError.code === 'auth/wrong-password') {
+                            // 如果使用者不存在，則註冊新帳號
+                            await window.firebaseSync.signUp(email, password);
+                        } else {
+                            throw signInError;
+                        }
+                    }
+                    
+                    emailInput.value = '';
+                } else {
+                    alert('Firebase 服務尚未準備就緒');
+                }
+            } catch (error) {
+                console.error('同步操作失敗:', error);
+                alert('同步失敗：' + (error.message || '未知錯誤'));
+            } finally {
+                syncBtn.disabled = false;
+                syncBtn.textContent = '登入/註冊';
+            }
+        }
+
+        /**
+         * 處理登出操作
+         */
+        async function handleLogout() {
+            try {
+                if (window.firebaseSync) {
+                    await window.firebaseSync.signOut();
+                }
+            } catch (error) {
+                console.error('登出失敗:', error);
+                alert('登出失敗：' + (error.message || '未知錯誤'));
+            }
+        }
+
+        /**
+         * 生成簡單密碼（基於 email）
+         * @param {string} email - 使用者 email
+         * @returns {string} 生成的密碼
+         */
+        function generateSimplePassword(email) {
+            // 使用 email 的 hash 和固定字串生成密碼
+            const hashCode = email.split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+            }, 0);
+            return 'sunny' + Math.abs(hashCode).toString() + '!';
+        }
+
+        /**
+         * 從雲端合併待辦事項資料
+         * @param {Array} cloudTodos - 雲端的待辦事項陣列
+         */
+        function mergeTodosFromCloud(cloudTodos) {
+            if (cloudTodos && cloudTodos.length > 0) {
+                console.log('合併雲端資料:', cloudTodos.length, '個項目');
+                todos = cloudTodos;
+                sortTodosByPriority();
+                saveTodos(); // 更新本地備份
+                renderTodos();
+                updateStats();
+            }
+        }
+
+        /**
+         * 處理即時同步更新
+         * @param {Object} todo - 更新的待辦事項
+         * @param {string} changeType - 變更類型 ('added', 'modified')
+         */
+        function handleRealtimeUpdate(todo, changeType) {
+            console.log('即時更新:', changeType, todo);
+            
+            const existingIndex = todos.findIndex(t => t.id === todo.id);
+            
+            if (changeType === 'added' || changeType === 'modified') {
+                if (existingIndex !== -1) {
+                    todos[existingIndex] = todo;
+                } else {
+                    todos.push(todo);
+                }
+            }
+            
+            sortTodosByPriority();
+            saveTodos();
+            renderTodos();
+            updateStats();
+        }
+
+        /**
+         * 處理即時同步刪除
+         * @param {number} todoId - 被刪除的待辦事項 ID
+         */
+        function handleRealtimeDelete(todoId) {
+            console.log('即時刪除:', todoId);
+            
+            const index = todos.findIndex(t => t.id === todoId);
+            if (index !== -1) {
+                todos.splice(index, 1);
+                saveTodos();
+                renderTodos();
+                updateStats();
+            }
+        }
+
+        // 將函式註冊到全域，供 firebase-sync.js 使用
+        window.mergeTodosFromCloud = mergeTodosFromCloud;
+        window.handleRealtimeUpdate = handleRealtimeUpdate;
+        window.handleRealtimeDelete = handleRealtimeDelete;
 
         /**
          * 從 LocalStorage 載入待辦事項資料
@@ -1160,10 +1486,18 @@
         }
 
         /**
-         * 將待辦事項資料儲存至 LocalStorage
+         * 將待辦事項資料儲存至 LocalStorage 和雲端
          */
         function saveTodos() {
+            // 本地存儲（備援）
             localStorage.setItem('dailyTodos', JSON.stringify(todos));
+            
+            // 雲端同步（如果已啟用）
+            if (window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+                window.firebaseSync.saveTodosToCloud(todos).catch(error => {
+                    console.error('雲端同步失敗:', error);
+                });
+            }
         }
 
         /**

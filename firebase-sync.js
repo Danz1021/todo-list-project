@@ -1,0 +1,311 @@
+/**
+ * Firebase 同步功能模組
+ * 處理使用者認證和資料同步
+ */
+
+/**
+ * Firebase 同步管理器
+ */
+class FirebaseSync {
+    constructor() {
+        this.app = null;
+        this.auth = null;
+        this.db = null;
+        this.currentUser = null;
+        this.isInitialized = false;
+        this.syncEnabled = false;
+    }
+
+    /**
+     * 初始化 Firebase
+     * @returns {Promise<boolean>} 初始化是否成功
+     */
+    async initialize() {
+        try {
+            if (typeof window.firebaseConfig === 'undefined') {
+                console.warn('Firebase config not found. Please configure firebase-config.js');
+                return false;
+            }
+
+            // 初始化 Firebase App
+            this.app = firebase.initializeApp(window.firebaseConfig);
+            this.auth = firebase.auth();
+            this.db = firebase.firestore();
+
+            // 監聽認證狀態變化
+            this.auth.onAuthStateChanged((user) => {
+                this.handleAuthStateChange(user);
+            });
+
+            this.isInitialized = true;
+            console.log('Firebase initialized successfully');
+            return true;
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 處理認證狀態變化
+     * @param {firebase.User|null} user - Firebase 使用者物件
+     */
+    async handleAuthStateChange(user) {
+        this.currentUser = user;
+        
+        if (user) {
+            console.log('User signed in:', user.email);
+            this.syncEnabled = true;
+            
+            // 使用者登入後，載入雲端資料
+            await this.loadTodosFromCloud();
+            
+            // 更新 UI 狀態
+            this.updateSyncUI(true, user.email);
+        } else {
+            console.log('User signed out');
+            this.syncEnabled = false;
+            this.updateSyncUI(false, null);
+        }
+    }
+
+    /**
+     * 使用 Email 和密碼註冊新使用者
+     * @param {string} email - 使用者 email
+     * @param {string} password - 密碼
+     * @returns {Promise<boolean>} 註冊是否成功
+     */
+    async signUp(email, password) {
+        try {
+            const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+            console.log('User registered successfully:', userCredential.user.email);
+            return true;
+        } catch (error) {
+            console.error('Sign up failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 使用 Email 和密碼登入
+     * @param {string} email - 使用者 email  
+     * @param {string} password - 密碼
+     * @returns {Promise<boolean>} 登入是否成功
+     */
+    async signIn(email, password) {
+        try {
+            const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+            console.log('User signed in successfully:', userCredential.user.email);
+            return true;
+        } catch (error) {
+            console.error('Sign in failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 登出使用者
+     * @returns {Promise<void>}
+     */
+    async signOut() {
+        try {
+            await this.auth.signOut();
+            console.log('User signed out successfully');
+        } catch (error) {
+            console.error('Sign out failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 儲存待辦事項到 Firestore
+     * @param {Array} todos - 待辦事項陣列
+     * @returns {Promise<boolean>} 儲存是否成功
+     */
+    async saveTodosToCloud(todos) {
+        if (!this.syncEnabled || !this.currentUser) {
+            console.log('Sync disabled or user not logged in');
+            return false;
+        }
+
+        try {
+            const userDoc = this.db.collection('users').doc(this.currentUser.uid);
+            const todosCollection = userDoc.collection('todos');
+
+            // 使用批次寫入來更新所有待辦事項
+            const batch = this.db.batch();
+
+            // 先清除現有的待辦事項（簡化版本）
+            const existingTodos = await todosCollection.get();
+            existingTodos.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            // 新增所有目前的待辦事項
+            todos.forEach((todo) => {
+                const todoRef = todosCollection.doc(todo.id.toString());
+                batch.set(todoRef, {
+                    ...todo,
+                    createdAt: todo.createdAt || new Date().toLocaleTimeString('zh-TW', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    }),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            // 更新用戶的最後同步時間
+            batch.set(userDoc, {
+                lastSync: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            await batch.commit();
+            console.log('Todos saved to cloud successfully');
+            return true;
+        } catch (error) {
+            console.error('Failed to save todos to cloud:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 從 Firestore 載入待辦事項
+     * @returns {Promise<Array|null>} 待辦事項陣列或 null
+     */
+    async loadTodosFromCloud() {
+        if (!this.syncEnabled || !this.currentUser) {
+            console.log('Sync disabled or user not logged in');
+            return null;
+        }
+
+        try {
+            const todosCollection = this.db
+                .collection('users')
+                .doc(this.currentUser.uid)
+                .collection('todos');
+
+            const snapshot = await todosCollection.orderBy('updatedAt', 'desc').get();
+            
+            const cloudTodos = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                // 轉換 Firestore 時間戳為字串
+                cloudTodos.push({
+                    ...data,
+                    id: parseFloat(doc.id) // 確保 ID 為數字
+                });
+            });
+
+            console.log('Loaded todos from cloud:', cloudTodos.length);
+            
+            // 更新本地資料
+            if (typeof window.mergeTodosFromCloud === 'function') {
+                window.mergeTodosFromCloud(cloudTodos);
+            }
+
+            return cloudTodos;
+        } catch (error) {
+            console.error('Failed to load todos from cloud:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 設定即時同步監聽器
+     */
+    setupRealtimeSync() {
+        if (!this.syncEnabled || !this.currentUser) {
+            return;
+        }
+
+        const todosCollection = this.db
+            .collection('users')
+            .doc(this.currentUser.uid)
+            .collection('todos');
+
+        // 監聽 Firestore 變化
+        this.todosListener = todosCollection.onSnapshot((snapshot) => {
+            const changes = snapshot.docChanges();
+            
+            changes.forEach((change) => {
+                const todoData = change.doc.data();
+                const todoId = parseFloat(change.doc.id);
+
+                if (change.type === 'added' || change.type === 'modified') {
+                    // 通知主程式更新待辦事項
+                    if (typeof window.handleRealtimeUpdate === 'function') {
+                        window.handleRealtimeUpdate({
+                            ...todoData,
+                            id: todoId
+                        }, change.type);
+                    }
+                } else if (change.type === 'removed') {
+                    // 通知主程式刪除待辦事項
+                    if (typeof window.handleRealtimeDelete === 'function') {
+                        window.handleRealtimeDelete(todoId);
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * 停止即時同步監聽器
+     */
+    stopRealtimeSync() {
+        if (this.todosListener) {
+            this.todosListener();
+            this.todosListener = null;
+        }
+    }
+
+    /**
+     * 更新同步狀態 UI
+     * @param {boolean} isLoggedIn - 是否已登入
+     * @param {string|null} email - 使用者 email
+     */
+    updateSyncUI(isLoggedIn, email) {
+        const syncStatus = document.getElementById('syncStatus');
+        const syncContainer = document.getElementById('syncContainer');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if (!syncStatus || !syncContainer || !logoutBtn) return;
+
+        if (isLoggedIn) {
+            syncStatus.textContent = `已同步: ${email}`;
+            syncStatus.className = 'sync-status logged-in';
+            syncContainer.style.display = 'none';
+            logoutBtn.style.display = 'block';
+            
+            // 啟用即時同步
+            this.setupRealtimeSync();
+        } else {
+            syncStatus.textContent = '未同步';
+            syncStatus.className = 'sync-status logged-out';
+            syncContainer.style.display = 'block';
+            logoutBtn.style.display = 'none';
+            
+            // 停止即時同步
+            this.stopRealtimeSync();
+        }
+    }
+
+    /**
+     * 檢查是否已初始化且可用
+     * @returns {boolean}
+     */
+    isReady() {
+        return this.isInitialized;
+    }
+
+    /**
+     * 檢查是否已啟用同步
+     * @returns {boolean}
+     */
+    isSyncEnabled() {
+        return this.syncEnabled;
+    }
+}
+
+// 建立全域 Firebase 同步實例
+window.firebaseSync = new FirebaseSync();
