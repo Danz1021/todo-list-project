@@ -1055,12 +1055,17 @@
     </div>
 
     <script>
-        // 全域變數
+        /**
+         * 全域變數
+         */
         let todos = [];
         let currentFilter = 'all';
         let currentPriorityFilter = 'all';
         
-        // 激勵語錄庫
+        /**
+         * 調酒推薦語錄庫
+         * 每日隨機顯示的調酒主題勵志語錄
+         */
         const dailyCocktails = [
             "🍸 今日適合來杯經典馬丁尼，清冽的味道伴隨高效的一天",
             "🥃 威士忌酸適合今天的心情，酸甜中帶著堅韌",
@@ -1084,7 +1089,10 @@
             "🥃 雪莉酒的細膩，品味生活的精緻美好"
         ];
 
-        // 隨機顏色庫
+        /**
+         * 隨機漸變顏色庫
+         * 用於 Header 區域的動態背景變換
+         */
         const colorGradients = [
             'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
@@ -1103,7 +1111,10 @@
             'linear-gradient(135deg, #4db6ac 0%, #26a69a 100%)'
         ];
 
-        // 初始化
+        /**
+         * 應用程式初始化函式
+         * 當 DOM 載入完成後執行所有初始化程序
+         */
         document.addEventListener('DOMContentLoaded', function() {
             loadTodos();
             updateDate();
@@ -1118,7 +1129,10 @@
             setInterval(updateHeaderColor, 5000);
         });
 
-        // 載入待辦事項
+        /**
+         * 從 LocalStorage 載入待辦事項資料
+         * 包含舊資料格式升級和優先級修正
+         */
         function loadTodos() {
             const saved = localStorage.getItem('dailyTodos');
             todos = saved ? JSON.parse(saved) : [];
@@ -1145,12 +1159,17 @@
             sortTodosByPriority();
         }
 
-        // 儲存待辦事項
+        /**
+         * 將待辦事項資料儲存至 LocalStorage
+         */
         function saveTodos() {
             localStorage.setItem('dailyTodos', JSON.stringify(todos));
         }
 
-        // 按優先級和時間排序所有待辦事項
+        /**
+         * 按優先級和時間排序所有待辦事項
+         * 優先級相同時按創建時間降序排序（新的在上）
+         */
         function sortTodosByPriority() {
             todos.sort((a, b) => {
                 const aPriority = a.priorityNumber || getPriorityNumber(a.priority || 'P2');
@@ -1166,7 +1185,10 @@
             });
         }
 
-        // 更新日期
+        /**
+         * 更新頁面顯示的當前日期
+         * 使用台灣地區格式顯示年月日和星期
+         */
         function updateDate() {
             const now = new Date();
             const options = { 
@@ -1179,7 +1201,10 @@
                 now.toLocaleDateString('zh-TW', options);
         }
 
-        // 更新每日語錄
+        /**
+         * 更新每日調酒推薦語錄
+         * 隨機選擇一句調酒主題的勵志語錄顯示
+         */
         function updateDailyQuote() {
             const quoteElement = document.getElementById('dailyQuote');
             if (!quoteElement) return;
@@ -1194,7 +1219,10 @@
             console.log('Daily cocktail updated:', selectedCocktail);
         }
 
-        // 更新Header顏色
+        /**
+         * 更新 Header 背景顏色
+         * 從預設的漸變色彩庫中隨機選擇一種顏色
+         */
         function updateHeaderColor() {
             const headerElement = document.querySelector('.header');
             if (!headerElement) return;
@@ -1206,7 +1234,10 @@
             console.log('Header color updated:', newGradient);
         }
 
-        // 檢查日期變更
+        /**
+         * 檢查日期變更並自動重置任務列表
+         * 如果檢測到跨日使用，自動清空前一日的任務
+         */
         function checkDate() {
             const today = new Date().toDateString();
             const lastDate = localStorage.getItem('lastTodoDate');
@@ -1219,7 +1250,10 @@
             localStorage.setItem('lastTodoDate', today);
         }
 
-        // 綁定事件
+        /**
+         * 綁定所有 UI 元素的事件處理器
+         * 包含按鈕點擊、鍵盤輸入、篩選功能等
+         */
         function bindEvents() {
             const todoInput = document.getElementById('todoInput');
             const addBtn = document.getElementById('addBtn');
@@ -1254,7 +1288,10 @@
             });
         }
 
-        // 新增待辦事項
+        /**
+         * 新增待辦事項
+         * 建立新的任務物件並加入到任務列表中
+         */
         function addTodo() {
             const input = document.getElementById('todoInput');
             const prioritySelect = document.getElementById('prioritySelect');
@@ -1293,7 +1330,11 @@
             console.log('Todo added:', todo); // 調試用
         }
 
-        // 獲取優先級數字 (用於排序)
+        /**
+         * 獲取優先級對應的數字值 (用於排序)
+         * @param {string} priority - 優先級字串 (P0-P4)
+         * @returns {number} 對應的數字值 (0-4)
+         */
         function getPriorityNumber(priority) {
             const priorityMap = {
                 'P0': 0,
@@ -1305,7 +1346,11 @@
             return priorityMap[priority] || 2; // 預設為P2
         }
 
-        // 獲取優先級顯示標籤
+        /**
+         * 獲取優先級的顯示標籤
+         * @param {string} priority - 優先級字串 (P0-P4)
+         * @returns {string} 包含 emoji 的顯示標籤
+         */
         function getPriorityLabel(priority) {
             const labelMap = {
                 'P0': '🔴 P0',
@@ -1317,7 +1362,10 @@
             return labelMap[priority] || '🟡 P2';
         }
 
-        // 按優先級排序插入待辦事項
+        /**
+         * 按優先級排序插入待辦事項
+         * @param {Object} newTodo - 新的待辦事項物件
+         */
         function insertTodoByPriority(newTodo) {
             // 直接加入到陣列開頭，然後重新排序
             todos.unshift(newTodo);
@@ -1340,7 +1388,10 @@
             return 'low';
         }
 
-        // 切換完成狀態
+        /**
+         * 切換待辦事項的完成狀態
+         * @param {number} id - 待辦事項的唯一識別碼
+         */
         function toggleTodo(id) {
             const todo = todos.find(t => t.id == id);
             if (todo) {
@@ -1352,7 +1403,10 @@
             }
         }
 
-        // 刪除待辦事項
+        /**
+         * 刪除指定的待辦事項
+         * @param {number} id - 待辦事項的唯一識別碼
+         */
         function deleteTodo(id) {
             if (confirm('確定要刪除這個待辦事項嗎？')) {
                 const index = todos.findIndex(t => t.id == id);
@@ -1373,7 +1427,10 @@
             }
         }
 
-        // 獲取過濾後的待辦事項
+        /**
+         * 獲取根據當前篩選條件過濾後的待辦事項
+         * @returns {Array} 過濾後的待辦事項陣列
+         */
         function getFilteredTodos() {
             let filtered = todos;
 
@@ -1395,7 +1452,10 @@
             return filtered;
         }
 
-        // 渲染待辦事項
+        /**
+         * 渲染待辦事項列表到頁面
+         * 根據當前篩選條件顯示對應的任務
+         */
         function renderTodos() {
             const todoList = document.getElementById('todoList');
             const emptyState = document.getElementById('emptyState');
@@ -1423,7 +1483,11 @@
             });
         }
 
-        // 創建待辦項目元素
+        /**
+         * 創建單個待辦事項的 DOM 元素
+         * @param {Object} todo - 待辦事項物件
+         * @returns {HTMLElement} 待辦事項的 DOM 元素
+         */
         function createTodoItem(todo) {
             const todoItem = document.createElement('div');
             todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
@@ -1463,7 +1527,10 @@
             return todoItem;
         }
 
-        // 更新統計
+        /**
+         * 更新統計資訊和進度條
+         * 計算總任務、已完成、待完成數量並更新進度
+         */
         function updateStats() {
             const total = todos.length;
             const completed = todos.filter(t => t.completed).length;
@@ -1492,7 +1559,11 @@
             }
         }
 
-        // 觸發進度動畫
+        /**
+         * 觸發進度里程碑動畫
+         * @param {number} oldProgress - 舊的進度百分比
+         * @param {number} newProgress - 新的進度百分比
+         */
         function triggerProgressAnimation(oldProgress, newProgress) {
             const progressElement = document.getElementById('progressFill');
             const messageElement = document.getElementById('progressMessage');
@@ -1533,7 +1604,10 @@
             });
         }
 
-        // 顯示進度訊息
+        /**
+         * 顯示進度里程碑訊息
+         * @param {string} message - 要顯示的訊息內容
+         */
         function showProgressMessage(message) {
             const messageElement = document.getElementById('progressMessage');
             if (!messageElement) return;
@@ -1547,7 +1621,11 @@
             messageElement.classList.add('show');
         }
 
-        // 創建emoji動畫
+        /**
+         * 創建 emoji 慶祝動畫
+         * @param {Array} emojis - emoji 字元陣列
+         * @param {boolean} isCelebration - 是否為完成慶祝動畫
+         */
         function createEmojiAnimation(emojis, isCelebration = false) {
             const emojisContainer = document.getElementById('progressEmojis');
             if (!emojisContainer) return;
@@ -1579,14 +1657,21 @@
             }, isCelebration ? 3000 : 2500);
         }
 
-        // HTML 轉義
+        /**
+         * HTML 內容轉義函式，防止 XSS 攻擊
+         * @param {string} text - 需要轉義的文字
+         * @returns {string} 轉義後的 HTML 安全文字
+         */
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // 頁面可見性變化時更新
+        /**
+         * 頁面可見性變化事件處理
+         * 當用戶重新回到頁面時更新日期、語錄和顏色
+         */
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 updateDate();
