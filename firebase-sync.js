@@ -14,6 +14,15 @@ class FirebaseSync {
         this.currentUser = null;
         this.isInitialized = false;
         this.syncEnabled = false;
+        this.quotaExceeded = false;
+        
+        // 每小時檢查配額是否恢復
+        setInterval(() => {
+            if (this.quotaExceeded) {
+                console.log('🔄 檢查Firebase配額是否恢復...');
+                this.quotaExceeded = false; // 重置標記，允許重試
+            }
+        }, 60 * 60 * 1000); // 每小時檢查一次
     }
 
     /**
