@@ -129,6 +129,10 @@ class FirebaseSync {
         }
 
         try {
+            // 設置更新標記，暫停即時監聽
+            this.isUpdatingCloud = true;
+            console.log('開始同步到雲端，暫停即時監聽');
+
             const userDoc = this.db.collection('users').doc(this.currentUser.uid);
             const todosCollection = userDoc.collection('todos');
 
@@ -161,9 +165,18 @@ class FirebaseSync {
 
             await batch.commit();
             console.log('Todos saved to cloud successfully');
+            
+            // 延遲後重新啟用即時監聽
+            setTimeout(() => {
+                this.isUpdatingCloud = false;
+                console.log('重新啟用即時監聽');
+            }, 3000); // 增加到3秒
+            
             return true;
         } catch (error) {
             console.error('Failed to save todos to cloud:', error);
+            // 錯誤時也要重新啟用監聽
+            this.isUpdatingCloud = false;
             return false;
         }
     }
@@ -211,42 +224,12 @@ class FirebaseSync {
     }
 
     /**
-     * 設定即時同步監聽器
+     * 設定即時同步監聽器 (已停用)
      */
     setupRealtimeSync() {
-        if (!this.syncEnabled || !this.currentUser) {
-            return;
-        }
-
-        const todosCollection = this.db
-            .collection('users')
-            .doc(this.currentUser.uid)
-            .collection('todos');
-
-        // 監聽 Firestore 變化
-        this.todosListener = todosCollection.onSnapshot((snapshot) => {
-            const changes = snapshot.docChanges();
-            
-            changes.forEach((change) => {
-                const todoData = change.doc.data();
-                const todoId = parseFloat(change.doc.id);
-
-                if (change.type === 'added' || change.type === 'modified') {
-                    // 通知主程式更新待辦事項
-                    if (typeof window.handleRealtimeUpdate === 'function') {
-                        window.handleRealtimeUpdate({
-                            ...todoData,
-                            id: todoId
-                        }, change.type);
-                    }
-                } else if (change.type === 'removed') {
-                    // 通知主程式刪除待辦事項
-                    if (typeof window.handleRealtimeDelete === 'function') {
-                        window.handleRealtimeDelete(todoId);
-                    }
-                }
-            });
-        });
+        // 已停用即時同步功能，避免無限循環問題
+        console.log('即時同步功能已停用');
+        return;
     }
 
     /**
@@ -257,6 +240,15 @@ class FirebaseSync {
             this.todosListener();
             this.todosListener = null;
         }
+        
+        // 清理定時器
+        if (this.realtimeUpdateTimer) {
+            clearTimeout(this.realtimeUpdateTimer);
+            this.realtimeUpdateTimer = null;
+        }
+        
+        this.isUpdatingCloud = false;
+        this.isFirstLoad = true;
     }
 
     /**

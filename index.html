@@ -1402,6 +1402,14 @@
                 if (window.firebaseSync) {
                     await window.firebaseSync.signOut();
                 }
+                
+                // 清空 Todo 列表
+                todos = [];
+                localStorage.removeItem('dailyTodos');
+                renderTodos();
+                updateStats();
+                
+                console.log('已清空 Todo 列表並登出');
             } catch (error) {
                 console.error('登出失敗:', error);
                 alert('登出失敗：' + (error.message || '未知錯誤'));
@@ -1427,11 +1435,17 @@
          * @param {Array} cloudTodos - 雲端的待辦事項陣列
          */
         function mergeTodosFromCloud(cloudTodos) {
+            // 只有登入時才合併雲端資料
+            if (!window.firebaseSync || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
+                console.log('未登入，跳過雲端資料合併');
+                return;
+            }
+            
             if (cloudTodos && cloudTodos.length > 0) {
                 console.log('合併雲端資料:', cloudTodos.length, '個項目');
                 todos = cloudTodos;
                 sortTodosByPriority();
-                saveTodos(); // 更新本地備份
+                saveTodos(true); // 更新本地備份，跳過雲端同步
                 renderTodos();
                 updateStats();
             }
@@ -1443,22 +1457,8 @@
          * @param {string} changeType - 變更類型 ('added', 'modified')
          */
         function handleRealtimeUpdate(todo, changeType) {
-            console.log('即時更新:', changeType, todo);
-            
-            const existingIndex = todos.findIndex(t => t.id === todo.id);
-            
-            if (changeType === 'added' || changeType === 'modified') {
-                if (existingIndex !== -1) {
-                    todos[existingIndex] = todo;
-                } else {
-                    todos.push(todo);
-                }
-            }
-            
-            sortTodosByPriority();
-            saveTodos();
-            renderTodos();
-            updateStats();
+            // 已停用即時同步功能
+            console.log('即時同步已停用');
         }
 
         /**
@@ -1466,15 +1466,8 @@
          * @param {number} todoId - 被刪除的待辦事項 ID
          */
         function handleRealtimeDelete(todoId) {
-            console.log('即時刪除:', todoId);
-            
-            const index = todos.findIndex(t => t.id === todoId);
-            if (index !== -1) {
-                todos.splice(index, 1);
-                saveTodos();
-                renderTodos();
-                updateStats();
-            }
+            // 已停用即時同步功能
+            console.log('即時同步已停用');
         }
 
         // 將函式註冊到全域，供 firebase-sync.js 使用
@@ -1487,8 +1480,15 @@
          * 包含舊資料格式升級和優先級修正
          */
         function loadTodos() {
-            const saved = localStorage.getItem('dailyTodos');
-            todos = saved ? JSON.parse(saved) : [];
+            // 只有登入時才載入本地資料
+            if (window.firebaseSync && window.firebaseSync.isSyncEnabled() && window.firebaseSync.currentUser) {
+                const saved = localStorage.getItem('dailyTodos');
+                todos = saved ? JSON.parse(saved) : [];
+            } else {
+                // 未登入時保持空列表
+                todos = [];
+                return;
+            }
             
             // 升級舊資料格式，確保所有項目都有正確的優先級
             todos = todos.map(todo => {
@@ -1515,12 +1515,12 @@
         /**
          * 將待辦事項資料儲存至 LocalStorage 和雲端
          */
-        function saveTodos() {
+        function saveTodos(skipCloudSync = false) {
             // 本地存儲（備援）
             localStorage.setItem('dailyTodos', JSON.stringify(todos));
             
-            // 雲端同步（如果已啟用）
-            if (window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+            // 雲端同步（如果已啟用且不跳過）
+            if (!skipCloudSync && window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
                 window.firebaseSync.saveTodosToCloud(todos).catch(error => {
                     console.error('雲端同步失敗:', error);
                 });
@@ -1654,6 +1654,12 @@
          * 建立新的任務物件並加入到任務列表中
          */
         function addTodo() {
+            // 檢查登入狀態
+            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
+                alert('請先透過 Email 登入後再新增待辦事項');
+                return;
+            }
+
             const input = document.getElementById('todoInput');
             const prioritySelect = document.getElementById('prioritySelect');
             const text = input.value.trim();
@@ -1673,6 +1679,7 @@
                     hour: '2-digit', 
                     minute: '2-digit' 
                 }),
+                updatedAt: new Date().toISOString(), // 本地更新時間戳
                 priority: selectedPriority,
                 priorityNumber: getPriorityNumber(selectedPriority)
             };
@@ -1683,8 +1690,8 @@
             // 清空輸入框，保持優先級選擇
             input.value = '';
             
-            // 立即更新
-            saveTodos();
+            // 立即更新 (正常同步到雲端)
+            saveTodos(); // 不跳過雲端同步，因為這是本地操作
             renderTodos();
             updateStats();
             
@@ -1754,10 +1761,17 @@
          * @param {number} id - 待辦事項的唯一識別碼
          */
         function toggleTodo(id) {
+            // 檢查登入狀態
+            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
+                alert('請先透過 Email 登入後再操作待辦事項');
+                return;
+            }
+
             const todo = todos.find(t => t.id == id);
             if (todo) {
                 todo.completed = !todo.completed;
-                saveTodos();
+                todo.updatedAt = new Date().toISOString(); // 本地更新時間戳
+                saveTodos(); // 不跳過雲端同步，因為這是本地操作
                 renderTodos();
                 updateStats();
                 console.log('Todo toggled:', id, todo.completed); // 調試用
@@ -1769,6 +1783,12 @@
          * @param {number} id - 待辦事項的唯一識別碼
          */
         function deleteTodo(id) {
+            // 檢查登入狀態
+            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
+                alert('請先透過 Email 登入後再刪除待辦事項');
+                return;
+            }
+
             if (confirm('確定要刪除這個待辦事項嗎？')) {
                 const index = todos.findIndex(t => t.id == id);
                 if (index !== -1) {
@@ -1778,8 +1798,8 @@
                     console.log('Todo deleted:', deletedTodo); // 調試用
                     console.log('Todos array after deletion:', todos);
                     
-                    // 立即保存和更新
-                    saveTodos();
+                    // 立即保存和更新 (正常同步到雲端)
+                    saveTodos(); // 不跳過雲端同步，因為這是本地操作
                     updateStats(); // 先更新統計
                     renderTodos(); // 再渲染
                 } else {
