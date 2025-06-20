@@ -1441,30 +1441,21 @@
             if (cloudTodos !== null && cloudTodos !== undefined) {
                 console.log('載入雲端資料:', cloudTodos.length, '個項目');
                 
-                // 如果雲端有資料，使用雲端資料
+                // 先載入本地資料
+                const localSaved = localStorage.getItem('dailyTodos');
+                const localTodos = localSaved ? JSON.parse(localSaved) : [];
+                
+                // 如果雲端有資料，合併雲端和本地資料
                 if (cloudTodos.length > 0) {
-                    todos = cloudTodos;
                     console.log('使用雲端資料');
+                    todos = cloudTodos;
+                } else if (localTodos.length > 0) {
+                    console.log('雲端為空，使用本地資料:', localTodos.length, '個項目');
+                    todos = localTodos;
+                    // 不立即同步到雲端，避免配額問題
                 } else {
-                    // 雲端空的，檢查本地是否有資料需要同步到雲端
-                    const localSaved = localStorage.getItem('dailyTodos');
-                    const localTodos = localSaved ? JSON.parse(localSaved) : [];
-                    
-                    if (localTodos.length > 0) {
-                        console.log('雲端為空，同步本地資料到雲端:', localTodos.length, '個項目');
-                        todos = localTodos;
-                        // 同步本地資料到雲端
-                        if (window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
-                            setTimeout(() => {
-                                window.firebaseSync.saveTodosToCloud(todos).catch(error => {
-                                    console.error('同步本地資料到雲端失敗:', error);
-                                });
-                            }, 1000);
-                        }
-                    } else {
-                        console.log('雲端和本地都無資料，保持空列表');
-                        todos = [];
-                    }
+                    console.log('雲端和本地都無資料，保持空列表');
+                    todos = [];
                 }
                 
                 sortTodosByPriority();
@@ -1472,7 +1463,13 @@
                 renderTodos();
                 updateStats();
             } else {
-                console.log('雲端資料載入失敗，保持本地狀態');
+                console.log('雲端資料載入失敗，使用本地資料');
+                // 載入本地資料作為備援
+                if (typeof window.loadTodos === 'function') {
+                    window.loadTodos();
+                    renderTodos();
+                    updateStats();
+                }
             }
         }
 
@@ -1543,6 +1540,12 @@
             
             // 雲端同步（如果已啟用且不跳過）
             if (!skipCloudSync && window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+                // 檢查是否配額超限
+                if (window.firebaseSync.quotaExceeded) {
+                    console.warn('Firebase配額超限，跳過雲端同步');
+                    return;
+                }
+                
                 // 節流雲端同步，避免API配額超限
                 if (window.cloudSyncTimer) {
                     clearTimeout(window.cloudSyncTimer);
@@ -1553,9 +1556,11 @@
                         console.error('雲端同步失敗:', error);
                         if (error.code === 'resource-exhausted') {
                             console.warn('Firebase配額超限，暫停同步');
+                            // 配額超限時，停止後續同步嘗試
+                            window.firebaseSync.quotaExceeded = true;
                         }
                     });
-                }, 1000); // 1秒節流
+                }, 3000); // 增加到3秒節流
             }
         }
 
