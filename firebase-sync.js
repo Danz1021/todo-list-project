@@ -57,21 +57,8 @@ class FirebaseSync {
             console.log('User signed in:', user.email);
             this.syncEnabled = true;
             
-            // 使用者登入後，先載入雲端資料，若無則顯示本地資料
-            const cloudTodos = await this.loadTodosFromCloud();
-            
-            // 如果雲端沒有資料，顯示本地資料並同步到雲端
-            if (!cloudTodos || cloudTodos.length === 0) {
-                if (typeof window.loadTodos === 'function') {
-                    window.loadTodos(); // 載入本地資料
-                }
-                if (typeof window.renderTodos === 'function') {
-                    window.renderTodos(); // 顯示資料
-                }
-                if (typeof window.updateStats === 'function') {
-                    window.updateStats();
-                }
-            }
+            // 載入雲端資料（這會自動合併到本地）
+            await this.loadTodosFromCloud();
             
             // 更新 UI 狀態
             this.updateSyncUI(true, user.email);

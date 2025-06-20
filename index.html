@@ -1438,16 +1438,41 @@
          * @param {Array} cloudTodos - 雲端的待辦事項陣列
          */
         function mergeTodosFromCloud(cloudTodos) {
-            // 檢查是否有有效的雲端資料
-            if (cloudTodos && cloudTodos.length > 0) {
-                console.log('合併雲端資料:', cloudTodos.length, '個項目');
-                todos = cloudTodos;
+            if (cloudTodos !== null && cloudTodos !== undefined) {
+                console.log('載入雲端資料:', cloudTodos.length, '個項目');
+                
+                // 如果雲端有資料，使用雲端資料
+                if (cloudTodos.length > 0) {
+                    todos = cloudTodos;
+                    console.log('使用雲端資料');
+                } else {
+                    // 雲端空的，檢查本地是否有資料需要同步到雲端
+                    const localSaved = localStorage.getItem('dailyTodos');
+                    const localTodos = localSaved ? JSON.parse(localSaved) : [];
+                    
+                    if (localTodos.length > 0) {
+                        console.log('雲端為空，同步本地資料到雲端:', localTodos.length, '個項目');
+                        todos = localTodos;
+                        // 同步本地資料到雲端
+                        if (window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+                            setTimeout(() => {
+                                window.firebaseSync.saveTodosToCloud(todos).catch(error => {
+                                    console.error('同步本地資料到雲端失敗:', error);
+                                });
+                            }, 1000);
+                        }
+                    } else {
+                        console.log('雲端和本地都無資料，保持空列表');
+                        todos = [];
+                    }
+                }
+                
                 sortTodosByPriority();
                 saveTodos(true); // 更新本地備份，跳過雲端同步
                 renderTodos();
                 updateStats();
             } else {
-                console.log('雲端無資料，保持本地狀態');
+                console.log('雲端資料載入失敗，保持本地狀態');
             }
         }
 
