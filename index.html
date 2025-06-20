@@ -1181,7 +1181,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <!-- Firebase 配置 -->
-    <script src="firebase-config.js"></script>
+    <script>
+        // 根據環境載入不同的配置檔案
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            // 本地開發環境
+            document.write('<script src="firebase-config.js"><\/script>');
+        } else {
+            // GitHub Pages 或其他線上環境
+            document.write('<script src="firebase-config.public.js"><\/script>');
+        }
+    </script>
     
     <!-- Firebase 同步功能 -->
     <script src="firebase-sync.js"></script>
@@ -1271,15 +1280,25 @@
          */
         async function initializeFirebase() {
             try {
+                console.log('開始初始化 Firebase...');
+                
+                // 檢查Firebase配置是否存在
+                if (typeof window.firebaseConfig === 'undefined') {
+                    console.error('Firebase 配置檔案未載入，請檢查 firebase-config.js');
+                    return;
+                }
+                console.log('Firebase 配置已載入:', window.firebaseConfig);
+                
                 if (typeof window.firebaseSync !== 'undefined') {
+                    console.log('Firebase 同步模組已載入，開始初始化...');
                     const initialized = await window.firebaseSync.initialize();
                     if (initialized) {
-                        console.log('Firebase 服務初始化成功');
+                        console.log('✅ Firebase 服務初始化成功');
                     } else {
-                        console.warn('Firebase 服務初始化失敗');
+                        console.error('❌ Firebase 服務初始化失敗');
                     }
                 } else {
-                    console.warn('Firebase 同步模組未載入');
+                    console.error('Firebase 同步模組未載入');
                 }
             } catch (error) {
                 console.error('Firebase 初始化錯誤:', error);
@@ -1346,8 +1365,10 @@
                         await window.firebaseSync.signIn(email, password);
                     } catch (signInError) {
                         if (signInError.code === 'auth/user-not-found' || 
-                            signInError.code === 'auth/wrong-password') {
+                            signInError.code === 'auth/wrong-password' ||
+                            signInError.code === 'auth/invalid-login-credentials') {
                             // 如果使用者不存在，則註冊新帳號
+                            console.log('使用者不存在，自動註冊新帳號...');
                             await window.firebaseSync.signUp(email, password);
                         } else {
                             throw signInError;
@@ -1356,7 +1377,13 @@
                     
                     emailInput.value = '';
                 } else {
-                    alert('Firebase 服務尚未準備就緒');
+                    if (typeof window.firebaseConfig === 'undefined') {
+                        alert('Firebase 配置檔案未載入，請檢查 firebase-config.js 檔案');
+                    } else if (typeof window.firebaseSync === 'undefined') {
+                        alert('Firebase 同步模組未載入');
+                    } else {
+                        alert('Firebase 服務尚未準備就緒，請重新整理頁面');
+                    }
                 }
             } catch (error) {
                 console.error('同步操作失敗:', error);
