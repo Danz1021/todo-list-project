@@ -973,7 +973,261 @@
             }
         }
 
-        /* Loading 動畫樣式 */
+        /* 頁面重整 Loading 動畫樣式 */
+        .page-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 50%, #2d3748 100%);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            visibility: visible;
+            transition: all 0.5s ease-out;
+        }
+
+        .page-loading-overlay.hide {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .whiskey-container {
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .whiskey-pouring {
+            width: 200px;
+            height: 250px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .whiskey-bottle {
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(135deg, #2d4a2b 0%, #4a7c59 50%, #2d4a2b 100%);
+            border-radius: 8px 8px 15px 15px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            transform-origin: bottom left;
+            animation: bottlePour 3s ease-in-out infinite;
+            box-shadow: 
+                inset 2px 2px 5px rgba(255,255,255,0.3),
+                inset -2px -2px 5px rgba(0,0,0,0.5),
+                0 5px 20px rgba(0,0,0,0.4);
+        }
+
+        .bottle-neck {
+            width: 20px;
+            height: 40px;
+            background: linear-gradient(135deg, #1a2e1a 0%, #2d4a2b 100%);
+            border-radius: 3px 3px 0 0;
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset 1px 1px 3px rgba(255,255,255,0.2);
+        }
+
+        .bottle-cap {
+            width: 25px;
+            height: 15px;
+            background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+            border-radius: 5px 5px 2px 2px;
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .whiskey-stream {
+            width: 3px;
+            height: 0;
+            background: linear-gradient(to bottom, #ffd700 0%, #daa520 50%, #b8860b 100%);
+            position: absolute;
+            top: 140px;
+            right: 30px;
+            border-radius: 0 0 2px 2px;
+            animation: streamPour 3s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        .whiskey-glass {
+            width: 100px;
+            height: 120px;
+            background: transparent;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 0 0 50px 50px;
+            position: absolute;
+            bottom: 20px;
+            left: 50px;
+            box-shadow: 
+                inset 0 5px 10px rgba(255,255,255,0.1),
+                0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .whiskey-liquid {
+            width: 94px;
+            height: 0;
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 50%, #b8860b 100%);
+            border-radius: 0 0 47px 47px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            animation: glassFill 3s ease-in-out infinite;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .whiskey-bubbles {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .whiskey-bubble {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(218,165,32,0.3) 100%);
+            border-radius: 50%;
+            animation: whiskey-bubbleFloat 2s linear infinite;
+            opacity: 0;
+        }
+
+        .whiskey-bubble:nth-child(1) { left: 20%; width: 4px; height: 4px; animation-delay: 0.5s; }
+        .whiskey-bubble:nth-child(2) { left: 50%; width: 3px; height: 3px; animation-delay: 1s; }
+        .whiskey-bubble:nth-child(3) { left: 70%; width: 5px; height: 5px; animation-delay: 1.5s; }
+
+        @keyframes bottlePour {
+            0%, 20% { transform: rotate(0deg); }
+            30%, 80% { transform: rotate(25deg); }
+            90%, 100% { transform: rotate(0deg); }
+        }
+
+        @keyframes streamPour {
+            0%, 20% { height: 0; opacity: 0; }
+            30% { height: 60px; opacity: 1; }
+            80% { height: 60px; opacity: 1; }
+            90%, 100% { height: 0; opacity: 0; }
+        }
+
+        @keyframes glassFill {
+            0%, 20% { height: 0; }
+            30%, 80% { height: 40px; }
+            90%, 100% { height: 40px; }
+        }
+
+        @keyframes whiskey-bubbleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(0);
+            }
+            20% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+            80% {
+                opacity: 1;
+                transform: translateY(-30px);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+        }
+
+        .page-loading-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: textGlow 2s ease-in-out infinite alternate;
+        }
+
+        .page-loading-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            font-style: italic;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,215,0,0.3); }
+            100% { text-shadow: 0 2px 4px rgba(0,0,0,0.5), 0 0 20px rgba(255,215,0,0.6); }
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .whiskey-pouring {
+                width: 160px;
+                height: 200px;
+            }
+
+            .whiskey-bottle {
+                width: 50px;
+                height: 100px;
+                right: 15px;
+            }
+
+            .bottle-neck {
+                width: 18px;
+                height: 35px;
+                top: -30px;
+            }
+
+            .whiskey-glass {
+                width: 80px;
+                height: 100px;
+                left: 40px;
+            }
+
+            .whiskey-liquid {
+                width: 74px;
+            }
+
+            .page-loading-text {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .whiskey-pouring {
+                width: 120px;
+                height: 150px;
+            }
+
+            .whiskey-bottle {
+                width: 40px;
+                height: 80px;
+                right: 10px;
+            }
+
+            .whiskey-glass {
+                width: 60px;
+                height: 80px;
+                left: 30px;
+            }
+
+            .whiskey-liquid {
+                width: 54px;
+            }
+
+            .page-loading-text {
+                font-size: 16px;
+            }
+        }
+
+        /* 登入 Loading 動畫樣式 */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -1353,6 +1607,28 @@
     </style>
 </head>
 <body>
+    <!-- 頁面重整 Loading 動畫 -->
+    <div id="pageLoadingOverlay" class="page-loading-overlay">
+        <div class="whiskey-container">
+            <div class="whiskey-pouring">
+                <div class="whiskey-bottle">
+                    <div class="bottle-neck"></div>
+                    <div class="bottle-cap"></div>
+                </div>
+                <div class="whiskey-stream"></div>
+                <div class="whiskey-glass">
+                    <div class="whiskey-liquid"></div>
+                    <div class="whiskey-bubbles">
+                        <div class="whiskey-bubble"></div>
+                        <div class="whiskey-bubble"></div>
+                        <div class="whiskey-bubble"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-loading-text" id="pageLoadingText">🍷 正在準備您的酒空清單</div>
+            <div class="page-loading-subtitle" id="pageLoadingSubtitle">請稍待，正在載入資料...</div>
+        </div>
+    </div>
     <!-- Loading 動畫遮罩 -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-container">
@@ -1461,6 +1737,96 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+    <!-- 頁面重整檢測腳本 -->
+    <script>
+        /**
+         * 早期頁面重整檢測和 Loading 管理
+         * 這個腳本在 <head> 中執行，確保早期顯示 Loading
+         */
+        (function() {
+            // 定義 Loading 類型
+            window.LoadingTypes = {
+                INITIAL: 'initial',
+                REFRESH: 'refresh', 
+                LOGIN: 'login'
+            };
+            
+            // 檢查是否為頁面重整
+            function isPageRefresh() {
+                // 方法1: 檢查 localStorage 標記
+                const refreshFlag = localStorage.getItem('isRefreshing');
+                if (refreshFlag === 'true') {
+                    return true;
+                }
+                
+                // 方法2: 檢查 performance.navigation (舊 API 但更廣泛支援)
+                if (performance.navigation && performance.navigation.type === 1) {
+                    return true;
+                }
+                
+                // 方法3: 檢查 performance.getEntriesByType (新 API)
+                try {
+                    const entries = performance.getEntriesByType('navigation');
+                    if (entries.length > 0 && entries[0].type === 'reload') {
+                        return true;
+                    }
+                } catch (e) {
+                    // 支援性回退
+                }
+                
+                return false;
+            }
+            
+            // 檢查是否為首次訪問
+            function isFirstVisit() {
+                const hasVisited = localStorage.getItem('hasVisited');
+                if (!hasVisited) {
+                    localStorage.setItem('hasVisited', 'true');
+                    return true;
+                }
+                return false;
+            }
+            
+            // 檢查是否有存在的 todos 資料
+            function hasExistingData() {
+                const todos = localStorage.getItem('dailyTodos');
+                const backup = localStorage.getItem('todoBackup');
+                return (todos && todos !== '[]') || (backup && backup !== '[]');
+            }
+            
+            // 決定 Loading 類型
+            let currentLoadingType = window.LoadingTypes.INITIAL;
+            
+            if (isPageRefresh()) {
+                currentLoadingType = window.LoadingTypes.REFRESH;
+                console.log('🔄 檢測到頁面重整');
+            } else if (isFirstVisit()) {
+                currentLoadingType = window.LoadingTypes.INITIAL;
+                console.log('🎆 檢測到首次訪問');
+            } else {
+                currentLoadingType = window.LoadingTypes.INITIAL;
+                console.log('🔗 檢測到正常訪問');
+            }
+            
+            // 將 Loading 類型存儲到全域變數
+            window.currentLoadingType = currentLoadingType;
+            window.hasExistingData = hasExistingData();
+            
+            // 清除重整標記
+            localStorage.removeItem('isRefreshing');
+            
+            console.log('🎯 Loading 類型:', currentLoadingType);
+            console.log('📊 有現有資料:', window.hasExistingData);
+        })();
+        
+        // 監聽頁面重整前事件
+        window.addEventListener('beforeunload', function() {
+            // 標記為重整狀態
+            localStorage.setItem('isRefreshing', 'true');
+            console.log('🔄 頁面即將重整，設置標記');
+        });
+    </script>
+    
     <!-- Firebase 配置 -->
     <script>
         // 根據環境載入不同的配置檔案
@@ -1538,21 +1904,59 @@
          * 當 DOM 載入完成後執行所有初始化程序
          */
         document.addEventListener('DOMContentLoaded', async function() {
-            // 初始化 Firebase
-            await initializeFirebase();
+            console.log('🚀 應用程式開始初始化...');
             
-            loadTodos();
-            updateDate();
-            updateDailyQuote();
-            updateHeaderColor();
-            checkDate();
-            bindEvents();
-            bindSyncEvents();
-            renderTodos();
-            updateStats();
+            // 根據 Loading 類型決定是否顯示頁面 Loading
+            if (window.currentLoadingType === window.LoadingTypes.REFRESH) {
+                console.log('🔄 頁面重整檢測，顯示重整 Loading');
+                showPageLoading('📚 正在讀取本地資料', '正在恢復您的待辦清單...');
+            } else if (!window.hasExistingData && window.currentLoadingType === window.LoadingTypes.INITIAL) {
+                console.log('🎆 首次訪問且無資料，顯示歡迎 Loading');
+                showPageLoading('🎉 歡迎使用 Sunny 的酒空清單', '正在為您準備專屬的待辦事項管理工具...');
+            }
+            
+            try {
+                // 初始化 Firebase
+                updatePageLoadingMessage('🔥 初始化服務', '正在連接雲端服務...');
+                await initializeFirebase();
+                
+                // 載入本地資料
+                updatePageLoadingMessage('💾 載入本地資料', '正在讀取您的待辦事項...');
+                loadTodos();
+                
+                // 初始化 UI 元素
+                updatePageLoadingMessage('🎨 初始化介面', '正在準備用戶介面...');
+                updateDate();
+                updateDailyQuote();
+                updateHeaderColor();
+                checkDate();
+                bindEvents();
+                bindSyncEvents();
+                
+                // 渲染內容
+                updatePageLoadingMessage('✨ 準備就緒', '正在整理您的待辦清單...');
+                renderTodos();
+                updateStats();
+                
+                // 完成初始化，隱藏 Loading
+                setTimeout(() => {
+                    if (window.currentLoadingType === window.LoadingTypes.REFRESH || 
+                        (window.currentLoadingType === window.LoadingTypes.INITIAL && !window.hasExistingData)) {
+                        updatePageLoadingMessage('🎉 準備完成！', '歡迎使用您的酒空清單');
+                        hidePageLoading(800);
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('應用程式初始化失敗:', error);
+                updatePageLoadingMessage('⚠️ 初始化失敗', '請嘗試重新整理頁面');
+                hidePageLoading(2000);
+            }
             
             // 每5秒變換一次header顏色
             setInterval(updateHeaderColor, 5000);
+            
+            console.log('✅ 應用程式初始化完成');
         });
 
         /**
@@ -1633,6 +2037,9 @@
                 return;
             }
 
+            // 設置 Loading 類型為登入
+            window.currentLoadingType = window.LoadingTypes.LOGIN;
+            
             // 顯示 Loading 動畫
             showLoading('🔑 正在驗證帳號', '請稍待，正在處理您的登入資訊...');
             
@@ -1777,10 +2184,18 @@
                     renderTodos();
                     updateStats();
                     
-                    // 資料合併完成，顯示成功訊息並隱藏 Loading
-                    if (typeof window.hideLoadingWithSuccess === 'function') {
-                        window.hideLoadingWithSuccess('🎉 歡迎回來！資料載入完成', 1500);
+                    // 資料合併完成，根據 Loading 類型決定隱藏方式
+                    if (window.currentLoadingType === window.LoadingTypes.LOGIN) {
+                        // 登入同步時使用登入 Loading
+                        if (typeof window.hideLoadingWithSuccess === 'function') {
+                            window.hideLoadingWithSuccess('🎉 歡迎回來！資料載入完成', 1500);
+                        }
+                    } else if (window.currentLoadingType === window.LoadingTypes.REFRESH) {
+                        // 頁面重整時使用頁面 Loading
+                        updatePageLoadingMessage('🎉 資料整理完成！', '歡迎回來，您的待辦清單已準備就緒');
+                        hidePageLoading(1000);
                     }
+                    // 其他情況不顯示 Loading，直接完成
                 } else {
                     console.log('雲端資料載入失敗，使用本地資料');
                     // 載入本地資料作為備援
@@ -1788,6 +2203,15 @@
                         window.loadTodos();
                         renderTodos();
                         updateStats();
+                    }
+                    
+                    // 失敗時也要隱藏 Loading
+                    if (window.currentLoadingType === window.LoadingTypes.LOGIN) {
+                        if (typeof window.hideLoading === 'function') {
+                            window.hideLoading();
+                        }
+                    } else if (window.currentLoadingType === window.LoadingTypes.REFRESH) {
+                        hidePageLoading(500);
                     }
                 }
             } catch (error) {
@@ -1819,7 +2243,76 @@
         }
 
         /**
-         * Loading 動畫管理函式
+         * 頁面重整 Loading 動畫管理函式
+         */
+        
+        /**
+         * 顯示頁面重整 Loading
+         * @param {string} message - 主要訊息
+         * @param {string} subtitle - 子標題訊息
+         */
+        function showPageLoading(message = '🍷 正在準備您的酒空清單', subtitle = '請稍待，正在載入資料...') {
+            const overlay = document.getElementById('pageLoadingOverlay');
+            const loadingText = document.getElementById('pageLoadingText');
+            const loadingSubtitle = document.getElementById('pageLoadingSubtitle');
+            
+            if (overlay && loadingText && loadingSubtitle) {
+                loadingText.textContent = message;
+                loadingSubtitle.textContent = subtitle;
+                overlay.classList.remove('hide');
+                
+                // 禁用頁面滾動
+                document.body.style.overflow = 'hidden';
+                
+                console.log('🍷 頁面 Loading 動畫顯示:', message);
+            }
+        }
+        
+        /**
+         * 更新頁面 Loading 訊息
+         * @param {string} message - 新的主要訊息
+         * @param {string} subtitle - 新的子標題訊息
+         */
+        function updatePageLoadingMessage(message, subtitle = null) {
+            const loadingText = document.getElementById('pageLoadingText');
+            const loadingSubtitle = document.getElementById('pageLoadingSubtitle');
+            
+            if (loadingText) {
+                loadingText.textContent = message;
+            }
+            
+            if (subtitle && loadingSubtitle) {
+                loadingSubtitle.textContent = subtitle;
+            }
+            
+            console.log('🔄 頁面 Loading 訊息更新:', message);
+        }
+        
+        /**
+         * 隱藏頁面 Loading
+         * @param {number} delay - 延遲時間（毫秒）
+         */
+        function hidePageLoading(delay = 500) {
+            setTimeout(() => {
+                const overlay = document.getElementById('pageLoadingOverlay');
+                
+                if (overlay) {
+                    overlay.classList.add('hide');
+                    
+                    // 延遲恢復滾動，等待動畫完成
+                    setTimeout(() => {
+                        document.body.style.overflow = '';
+                        // 完全隱藏後移除 DOM 元素（可選）
+                        // overlay.style.display = 'none';
+                    }, 500);
+                    
+                    console.log('✅ 頁面 Loading 動畫隱藏');
+                }
+            }, delay);
+        }
+        
+        /**
+         * 登入 Loading 動畫管理函式
          */
         
         /**
@@ -1900,10 +2393,17 @@
         window.loadTodos = loadTodos;
         window.renderTodos = renderTodos;
         window.updateStats = updateStats;
+        
+        // 登入 Loading 函式
         window.showLoading = showLoading;
         window.updateLoadingMessage = updateLoadingMessage;
         window.hideLoading = hideLoading;
         window.hideLoadingWithSuccess = hideLoadingWithSuccess;
+        
+        // 頁面 Loading 函式
+        window.showPageLoading = showPageLoading;
+        window.updatePageLoadingMessage = updatePageLoadingMessage;
+        window.hidePageLoading = hidePageLoading;
 
         /**
          * 從 LocalStorage 載入待辦事項資料
