@@ -1951,8 +1951,9 @@
                 
                 // 完成初始化，隱藏 Loading
                 setTimeout(() => {
+                    // 修復：確保所有情況下都能隱藏 Loading 畫面
                     if (window.currentLoadingType === window.LoadingTypes.REFRESH || 
-                        (window.currentLoadingType === window.LoadingTypes.INITIAL && !window.hasExistingData)) {
+                        window.currentLoadingType === window.LoadingTypes.INITIAL) {
                         updatePageLoadingMessage('🎉 準備完成！', '歡迎使用您的酒空清單');
                         hidePageLoading(800);
                     }
