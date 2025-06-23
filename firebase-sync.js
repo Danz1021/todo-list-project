@@ -66,10 +66,15 @@ class FirebaseSync {
             console.log('User signed in:', user.email);
             this.syncEnabled = true;
             
+            // 更新 Loading 訊息
+            if (typeof window.updateLoadingMessage === 'function') {
+                window.updateLoadingMessage('📱 登入成功！正在載入資料', '正在從雲端取回您的待辦清單...');
+            }
+            
             // 延遲載入雲端資料，避免與本地載入競爭
             setTimeout(async () => {
                 await this.loadTodosFromCloud();
-            }, 2000);
+            }, 1500);
             
             // 更新 UI 狀態
             this.updateSyncUI(true, user.email);
@@ -84,6 +89,11 @@ class FirebaseSync {
             // 不再清空 todos，保持本地資料
             // 這樣重新整理或網路問題時不會丟失資料
             console.log('保持本地資料，不清空 todos');
+            
+            // 隱藏 loading 動畫（如果正在顯示）
+            if (typeof window.hideLoading === 'function') {
+                window.hideLoading();
+            }
             
             this.updateSyncUI(false, null);
         }
@@ -229,11 +239,19 @@ class FirebaseSync {
         // 檢查配額限制
         if (this.quotaExceeded) {
             console.log('Firebase quota exceeded, skipping cloud load');
+            if (typeof window.hideLoading === 'function') {
+                window.hideLoading();
+            }
             return null;
         }
 
         try {
             console.log('📞 載入雲端資料...');
+            
+            // 更新 Loading 訊息
+            if (typeof window.updateLoadingMessage === 'function') {
+                window.updateLoadingMessage('📎 正在整理您的待辦清單', '從雲端取回最新資料...');
+            }
             
             const todosCollection = this.db
                 .collection('users')
@@ -254,12 +272,17 @@ class FirebaseSync {
 
             console.log('✅ 雲端資料載入成功:', cloudTodos.length, '個項目');
             
+            // 更新 Loading 訊息為整理中
+            if (typeof window.updateLoadingMessage === 'function') {
+                window.updateLoadingMessage('✨ 正在整理資料', '合併本地與雲端資料...');
+            }
+            
             // 延遲合併資料，避免競爭條件
             setTimeout(() => {
                 if (typeof window.mergeTodosFromCloud === 'function') {
                     window.mergeTodosFromCloud(cloudTodos);
                 }
-            }, 1000);
+            }, 800);
 
             return cloudTodos;
         } catch (error) {
@@ -269,6 +292,11 @@ class FirebaseSync {
             if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
                 console.warn('🚫 Firebase 配額超限');
                 this.quotaExceeded = true;
+            }
+            
+            // 發生錯誤時隱藏 loading
+            if (typeof window.hideLoading === 'function') {
+                window.hideLoading();
             }
             
             return null;
