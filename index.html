@@ -1636,7 +1636,7 @@
                     </div>
                 </div>
             </div>
-            <div class="page-loading-text" id="pageLoadingText">🍷 正在準備您的酒空清單</div>
+            <div class="page-loading-text" id="pageLoadingText">🍷 正在準備您的待辦清單</div>
             <div class="page-loading-subtitle" id="pageLoadingSubtitle">請稍待，正在載入資料...</div>
         </div>
     </div>
@@ -1665,7 +1665,7 @@
 
     <div class="container">
         <div class="header">
-            <h1>☀️ Sunny的酒空清單</h1>
+            <h1>🍺 酒鬼的待辦清單</h1>
             <div class="date" id="currentDate"></div>
             <div class="daily-quote" id="dailyQuote"></div>
         </div>
@@ -1923,7 +1923,7 @@
                 showPageLoading('📚 正在讀取本地資料', '正在恢復您的待辦清單...');
             } else if (!window.hasExistingData && window.currentLoadingType === window.LoadingTypes.INITIAL) {
                 console.log('🎆 首次訪問且無資料，顯示歡迎 Loading');
-                showPageLoading('🎉 歡迎使用 Sunny 的酒空清單', '正在為您準備專屬的待辦事項管理工具...');
+                showPageLoading('🎉 歡迎使用酒鬼的待辦清單', '正在為您準備專屬的待辦事項管理工具...');
             }
             
             try {
@@ -1954,7 +1954,7 @@
                     // 修復：確保所有情況下都能隱藏 Loading 畫面
                     if (window.currentLoadingType === window.LoadingTypes.REFRESH || 
                         window.currentLoadingType === window.LoadingTypes.INITIAL) {
-                        updatePageLoadingMessage('🎉 準備完成！', '歡迎使用您的酒空清單');
+                        updatePageLoadingMessage('🎉 準備完成！', '歡迎使用您的待辦清單');
                         hidePageLoading(800);
                     }
                 }, 1000);
@@ -2073,7 +2073,7 @@
                             signInError.code === 'auth/invalid-login-credentials') {
                             // 如果使用者不存在，則註冊新帳號
                             console.log('使用者不存在，自動註冊新帳號...');
-                            updateLoadingMessage('🎆 正在建立新帳號', '為您建立專屬的酒空清單...');
+                            updateLoadingMessage('🎆 正在建立新帳號', '為您建立專屬的待辦清單...');
                             await window.firebaseSync.signUp(email, password);
                         } else {
                             throw signInError;
@@ -2263,7 +2263,7 @@
          * @param {string} message - 主要訊息
          * @param {string} subtitle - 子標題訊息
          */
-        function showPageLoading(message = '🍷 正在準備您的酒空清單', subtitle = '請稍待，正在載入資料...') {
+        function showPageLoading(message = '🍷 正在準備您的待辦清單', subtitle = '請稍待，正在載入資料...') {
             const overlay = document.getElementById('pageLoadingOverlay');
             const loadingText = document.getElementById('pageLoadingText');
             const loadingSubtitle = document.getElementById('pageLoadingSubtitle');
