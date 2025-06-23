@@ -860,7 +860,7 @@
             
             .todo-text {
                 margin-left: 44px;
-                margin-right: 80px;
+                margin-right: 88px; /* 增加右邊距以配合優先級標籤位置調整 */
                 display: block;
                 padding: 4px 0;
             }
@@ -868,7 +868,7 @@
             .priority-badge {
                 position: absolute !important;
                 top: 50% !important;
-                right: 44px;
+                right: 52px; /* 增加與刪除按鈕的間距從 44px 至 52px */
                 font-size: 10px;
                 padding: 4px 8px;
                 border-radius: 8px;
@@ -1490,6 +1490,17 @@
 
             .loading-text {
                 font-size: 15px;
+            }
+            
+            /* 小螢幕手機的 Todo 項目間距優化 */
+            .priority-badge {
+                right: 50px !important; /* 小螢幕上稍微緊湊一些 */
+                font-size: 9px !important; /* 輕微縮小字體 */
+                padding: 3px 6px !important;
+            }
+            
+            .todo-text {
+                margin-right: 84px !important; /* 配合優先級標籤的調整 */
             }
         }
 
