@@ -66,23 +66,24 @@ class FirebaseSync {
             console.log('User signed in:', user.email);
             this.syncEnabled = true;
             
-            // 載入雲端資料（這會自動合併到本地）
-            await this.loadTodosFromCloud();
+            // 延遲載入雲端資料，避免與本地載入競爭
+            setTimeout(async () => {
+                await this.loadTodosFromCloud();
+            }, 2000);
             
             // 更新 UI 狀態
             this.updateSyncUI(true, user.email);
         } else {
-            console.log('User signed out');
+            console.log('User signed out or not authenticated');
             this.syncEnabled = false;
-            this.currentUser = null; // 明確清除用戶狀態
+            this.currentUser = null;
             
             // 停止即時同步
             this.stopRealtimeSync();
             
-            // 清空todos並更新UI
-            if (typeof window.todos !== 'undefined') {
-                window.todos = [];
-            }
+            // 不再清空 todos，保持本地資料
+            // 這樣重新整理或網路問題時不會丟失資料
+            console.log('保持本地資料，不清空 todos');
             
             this.updateSyncUI(false, null);
         }
@@ -147,10 +148,16 @@ class FirebaseSync {
             return false;
         }
 
+        // 檢查配額限制
+        if (this.quotaExceeded) {
+            console.log('Firebase quota exceeded, skipping cloud sync');
+            return false;
+        }
+
         try {
             // 設置更新標記，暫停即時監聽
             this.isUpdatingCloud = true;
-            console.log('開始同步到雲端，暫停即時監聽');
+            console.log('開始雲端同步:', todos.length, '個項目');
 
             const userDoc = this.db.collection('users').doc(this.currentUser.uid);
             const todosCollection = userDoc.collection('todos');
@@ -173,27 +180,36 @@ class FirebaseSync {
                         hour: '2-digit', 
                         minute: '2-digit' 
                     }),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    syncVersion: Date.now() // 添加同步版本號
                 });
             });
 
             // 更新用戶的最後同步時間
             batch.set(userDoc, {
-                lastSync: firebase.firestore.FieldValue.serverTimestamp()
+                lastSync: firebase.firestore.FieldValue.serverTimestamp(),
+                todoCount: todos.length
             }, { merge: true });
 
             await batch.commit();
-            console.log('Todos saved to cloud successfully');
+            console.log('✅ 雲端同步成功');
             
             // 延遲後重新啟用即時監聽
             setTimeout(() => {
                 this.isUpdatingCloud = false;
                 console.log('重新啟用即時監聽');
-            }, 5000); // 增加到5秒，減少API調用頻率
+            }, 5000);
             
             return true;
         } catch (error) {
-            console.error('Failed to save todos to cloud:', error);
+            console.error('❗ 雲端同步失敗:', error);
+            
+            // 檢查是否為配額問題
+            if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+                console.warn('🚫 Firebase 配額超限，停止同步');
+                this.quotaExceeded = true;
+            }
+            
             // 錯誤時也要重新啟用監聽
             this.isUpdatingCloud = false;
             return false;
@@ -210,7 +226,15 @@ class FirebaseSync {
             return null;
         }
 
+        // 檢查配額限制
+        if (this.quotaExceeded) {
+            console.log('Firebase quota exceeded, skipping cloud load');
+            return null;
+        }
+
         try {
+            console.log('📞 載入雲端資料...');
+            
             const todosCollection = this.db
                 .collection('users')
                 .doc(this.currentUser.uid)
@@ -228,16 +252,25 @@ class FirebaseSync {
                 });
             });
 
-            console.log('Loaded todos from cloud:', cloudTodos.length);
+            console.log('✅ 雲端資料載入成功:', cloudTodos.length, '個項目');
             
-            // 更新本地資料
-            if (typeof window.mergeTodosFromCloud === 'function') {
-                window.mergeTodosFromCloud(cloudTodos);
-            }
+            // 延遲合併資料，避免競爭條件
+            setTimeout(() => {
+                if (typeof window.mergeTodosFromCloud === 'function') {
+                    window.mergeTodosFromCloud(cloudTodos);
+                }
+            }, 1000);
 
             return cloudTodos;
         } catch (error) {
-            console.error('Failed to load todos from cloud:', error);
+            console.error('❗ 雲端資料載入失敗:', error);
+            
+            // 檢查是否為配額問題
+            if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+                console.warn('🚫 Firebase 配額超限');
+                this.quotaExceeded = true;
+            }
+            
             return null;
         }
     }
@@ -288,7 +321,7 @@ class FirebaseSync {
             syncContainer.style.display = 'none';
             logoutBtn.style.display = 'block';
             
-            // 啟用即時同步
+            // 啟用即時同步（已停用）
             this.setupRealtimeSync();
         } else {
             syncStatus.textContent = '未同步';
@@ -299,21 +332,9 @@ class FirebaseSync {
             // 停止即時同步
             this.stopRealtimeSync();
             
-            // 觸發UI更新到登出狀態
-            if (typeof window.renderTodos === 'function') {
-                try {
-                    window.renderTodos();
-                } catch (error) {
-                    console.error('登出後UI更新失敗:', error);
-                }
-            }
-            if (typeof window.updateStats === 'function') {
-                try {
-                    window.updateStats();
-                } catch (error) {
-                    console.error('登出後統計更新失敗:', error);
-                }
-            }
+            // 不再在登出時觸發 UI 更新，保持當前狀態
+            // 這樣可以避免重新整理時的關闍
+            console.log('UI 已更新為登出狀態，保持當前資料顯示');
         }
     }
 

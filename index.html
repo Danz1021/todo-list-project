@@ -1392,9 +1392,12 @@
         async function handleLogout() {
             console.log('開始登出流程...');
             
-            // 清空本地狀態
-            todos = [];
-            localStorage.removeItem('dailyTodos');
+            // 在登出前先儲存當前資料到本地（作為備援）
+            if (todos && todos.length > 0) {
+                console.log('登出前備份本地資料:', todos.length, '個項目');
+                localStorage.setItem('dailyTodos', JSON.stringify(todos));
+                localStorage.setItem('todoBackup', JSON.stringify(todos));
+            }
             
             // 清理同步定時器
             if (window.cloudSyncTimer) {
@@ -1410,10 +1413,10 @@
                 console.log('Firebase登出成功');
             } catch (error) {
                 console.error('Firebase登出錯誤:', error);
-                // 不顯示錯誤給用戶，因為本地狀態已清理
+                // 不顯示錯誤給用戶，但確保本地狀態正確
             }
             
-            // 強制重新整理頁面，確保乾淨狀態
+            // 重新整理頁面，讓用戶看到登出狀態
             setTimeout(() => {
                 window.location.reload();
             }, 500);
@@ -1438,38 +1441,58 @@
          * @param {Array} cloudTodos - 雲端的待辦事項陣列
          */
         function mergeTodosFromCloud(cloudTodos) {
-            if (cloudTodos !== null && cloudTodos !== undefined) {
-                console.log('載入雲端資料:', cloudTodos.length, '個項目');
-                
-                // 先載入本地資料
-                const localSaved = localStorage.getItem('dailyTodos');
-                const localTodos = localSaved ? JSON.parse(localSaved) : [];
-                
-                // 如果雲端有資料，合併雲端和本地資料
-                if (cloudTodos.length > 0) {
-                    console.log('使用雲端資料');
-                    todos = cloudTodos;
-                } else if (localTodos.length > 0) {
-                    console.log('雲端為空，使用本地資料:', localTodos.length, '個項目');
-                    todos = localTodos;
-                    // 不立即同步到雲端，避免配額問題
-                } else {
-                    console.log('雲端和本地都無資料，保持空列表');
-                    todos = [];
-                }
-                
-                sortTodosByPriority();
-                saveTodos(true); // 更新本地備份，跳過雲端同步
-                renderTodos();
-                updateStats();
-            } else {
-                console.log('雲端資料載入失敗，使用本地資料');
-                // 載入本地資料作為備援
-                if (typeof window.loadTodos === 'function') {
-                    window.loadTodos();
+            try {
+                if (cloudTodos !== null && cloudTodos !== undefined) {
+                    console.log('載入雲端資料:', cloudTodos.length, '個項目');
+                    
+                    // 先載入本地資料
+                    const localSaved = localStorage.getItem('dailyTodos');
+                    const localTodos = localSaved ? JSON.parse(localSaved) : [];
+                    const localBackup = localStorage.getItem('todoBackup');
+                    const backupTodos = localBackup ? JSON.parse(localBackup) : [];
+                    
+                    // 智能合併策略：優先使用最新的非空資料
+                    if (cloudTodos.length > 0) {
+                        console.log('使用雲端資料');
+                        todos = cloudTodos;
+                    } else if (localTodos.length > 0) {
+                        console.log('雲端為空，使用本地主資料:', localTodos.length, '個項目');
+                        todos = localTodos;
+                        // 延遲同步到雲端，避免競爭條件
+                        setTimeout(() => {
+                            if (window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+                                saveTodos(false); // 允許雲端同步
+                            }
+                        }, 5000);
+                    } else if (backupTodos.length > 0) {
+                        console.log('主資料和雲端都為空，使用備份資料:', backupTodos.length, '個項目');
+                        todos = backupTodos;
+                        // 從備份復原後更新主資料
+                        localStorage.setItem('dailyTodos', JSON.stringify(todos));
+                    } else {
+                        console.log('所有來源都無資料，保持空列表');
+                        todos = [];
+                    }
+                    
+                    sortTodosByPriority();
+                    saveTodos(true); // 更新本地備份，跳過雲端同步
                     renderTodos();
                     updateStats();
+                } else {
+                    console.log('雲端資料載入失敗，使用本地資料');
+                    // 載入本地資料作為備援
+                    if (typeof window.loadTodos === 'function') {
+                        window.loadTodos();
+                        renderTodos();
+                        updateStats();
+                    }
                 }
+            } catch (error) {
+                console.error('合併雲端資料失敗:', error);
+                // 當合併失敗時，回到本地資料
+                loadTodos();
+                renderTodos();
+                updateStats();
             }
         }
 
@@ -1505,41 +1528,65 @@
          * 包含舊資料格式升級和優先級修正
          */
         function loadTodos() {
-            // 先載入本地資料，Firebase認證狀態變化時會決定是否顯示
-            const saved = localStorage.getItem('dailyTodos');
-            todos = saved ? JSON.parse(saved) : [];
-            
-            // 升級舊資料格式，確保所有項目都有正確的優先級
-            todos = todos.map(todo => {
-                if (!todo.priority || !todo.priority.startsWith('P')) {
-                    // 舊格式轉換
-                    const oldPriority = todo.priority;
-                    if (oldPriority === 'high') todo.priority = 'P0';
-                    else if (oldPriority === 'medium') todo.priority = 'P1';
-                    else todo.priority = 'P2';
+            try {
+                // 先嘗試載入主要的本地資料
+                let saved = localStorage.getItem('dailyTodos');
+                
+                // 如果主要資料不存在，嘗試載入備份資料
+                if (!saved || saved === '[]') {
+                    const backup = localStorage.getItem('todoBackup');
+                    if (backup && backup !== '[]') {
+                        console.log('主資料為空，從備份載入資料');
+                        saved = backup;
+                        // 從備份復原後，更新主資料
+                        localStorage.setItem('dailyTodos', saved);
+                    }
                 }
                 
-                // 確保有 priorityNumber
-                if (!todo.priorityNumber) {
-                    todo.priorityNumber = getPriorityNumber(todo.priority);
-                }
+                todos = saved ? JSON.parse(saved) : [];
+                console.log('載入本地資料:', todos.length, '個項目');
                 
-                return todo;
-            });
-            
-            // 按優先級排序
-            sortTodosByPriority();
+                // 升級舊資料格式，確保所有項目都有正確的優先級
+                todos = todos.map(todo => {
+                    if (!todo.priority || !todo.priority.startsWith('P')) {
+                        // 舊格式轉換
+                        const oldPriority = todo.priority;
+                        if (oldPriority === 'high') todo.priority = 'P0';
+                        else if (oldPriority === 'medium') todo.priority = 'P1';
+                        else todo.priority = 'P2';
+                    }
+                    
+                    // 確保有 priorityNumber
+                    if (!todo.priorityNumber) {
+                        todo.priorityNumber = getPriorityNumber(todo.priority);
+                    }
+                    
+                    return todo;
+                });
+                
+                // 按優先級排序
+                sortTodosByPriority();
+            } catch (error) {
+                console.error('載入本地資料失敗:', error);
+                todos = [];
+            }
         }
 
         /**
          * 將待辦事項資料儲存至 LocalStorage 和雲端
          */
         function saveTodos(skipCloudSync = false) {
-            // 本地存儲（備援）
-            localStorage.setItem('dailyTodos', JSON.stringify(todos));
+            // 強化本地存儲（主要儲存）
+            try {
+                localStorage.setItem('dailyTodos', JSON.stringify(todos));
+                localStorage.setItem('lastSaveTime', new Date().toISOString());
+                console.log('本地資料已儲存:', todos.length, '個項目');
+            } catch (error) {
+                console.error('本地儲存失敗:', error);
+            }
             
             // 雲端同步（如果已啟用且不跳過）
-            if (!skipCloudSync && window.firebaseSync && window.firebaseSync.isSyncEnabled()) {
+            if (!skipCloudSync && window.firebaseSync && window.firebaseSync.isSyncEnabled() && window.firebaseSync.currentUser) {
                 // 檢查是否配額超限
                 if (window.firebaseSync.quotaExceeded) {
                     console.warn('Firebase配額超限，跳過雲端同步');
@@ -1552,15 +1599,17 @@
                 }
                 
                 window.cloudSyncTimer = setTimeout(() => {
+                    console.log('開始雲端同步...');
                     window.firebaseSync.saveTodosToCloud(todos).catch(error => {
                         console.error('雲端同步失敗:', error);
                         if (error.code === 'resource-exhausted') {
                             console.warn('Firebase配額超限，暫停同步');
-                            // 配額超限時，停止後續同步嘗試
                             window.firebaseSync.quotaExceeded = true;
                         }
                     });
-                }, 3000); // 增加到3秒節流
+                }, 3000); // 保持3秒節流
+            } else {
+                console.log('雲端同步跳過 - 未登入或同步已停用');
             }
         }
 
@@ -1691,11 +1740,8 @@
          * 建立新的任務物件並加入到任務列表中
          */
         function addTodo() {
-            // 檢查登入狀態
-            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
-                alert('請先透過 Email 登入後再新增待辦事項');
-                return;
-            }
+            // 移除嚴格的登入檢查，允許本地操作
+            // 如果未登入，會在本地儲存，登入後自動同步
 
             const input = document.getElementById('todoInput');
             const prioritySelect = document.getElementById('prioritySelect');
@@ -1798,11 +1844,7 @@
          * @param {number} id - 待辦事項的唯一識別碼
          */
         function toggleTodo(id) {
-            // 檢查登入狀態
-            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
-                alert('請先透過 Email 登入後再操作待辦事項');
-                return;
-            }
+            // 移除嚴格的登入檢查，允許本地操作
 
             const todo = todos.find(t => t.id == id);
             if (todo) {
@@ -1820,11 +1862,7 @@
          * @param {number} id - 待辦事項的唯一識別碼
          */
         function deleteTodo(id) {
-            // 檢查登入狀態
-            if (!window.firebaseSync || !window.firebaseSync.isReady() || !window.firebaseSync.isSyncEnabled() || !window.firebaseSync.currentUser) {
-                alert('請先透過 Email 登入後再刪除待辦事項');
-                return;
-            }
+            // 移除嚴格的登入檢查，允許本地操作
 
             if (confirm('確定要刪除這個待辦事項嗎？')) {
                 const index = todos.findIndex(t => t.id == id);
