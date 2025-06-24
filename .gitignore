@@ -57,3 +57,17 @@ firebase-config.local.js
 .firebaserc
 firebase-debug.log
 firebase-debug.*.log
+
+# Node.js dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# VitePress build outputs
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Coverage reports
+coverage/
+*.lcov

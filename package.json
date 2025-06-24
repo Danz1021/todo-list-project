@@ -1,0 +1,27 @@
+{
+  "name": "todo-list-project",
+  "version": "2.0.0",
+  "description": "一個以調酒為主題的現代化待辦事項管理應用程式",
+  "main": "index.html",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "serve": "python3 -m http.server 8000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "todo",
+    "task-management",
+    "javascript",
+    "vanilla-js",
+    "responsive",
+    "cocktail-theme"
+  ],
+  "author": "Dan Zheng <danz1021@github.com>",
+  "license": "MIT",
+  "packageManager": "pnpm@10.11.0",
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}
