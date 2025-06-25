@@ -591,10 +591,8 @@
             padding: 20px 30px;
             border-top: 1px solid #eee;
             display: flex;
-            gap: 20px;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 16px;
             margin-bottom: 8px;
         }
 
@@ -668,31 +666,31 @@
             color: #3498db;
         }
 
-        /* 搜尋組件樣式 */
+        /* 搜尋組件樣式 - 方案二：搜尋優先布局 */
         .search-container {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            margin-bottom: 12px;
+            width: 100%;
         }
 
         .search-input-wrapper {
             position: relative;
             display: flex;
             align-items: center;
-            flex: 1;
+            width: 100%;
         }
 
         .search-input {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px 35px 10px 12px;
+            width: 100%;
+            padding: 12px 40px 12px 14px;
             border: 2px solid #ddd;
-            border-radius: 8px;
+            border-radius: 10px;
             background: white;
-            font-size: 14px;
+            font-size: 15px;
             outline: none;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .search-input:focus {
@@ -702,16 +700,16 @@
 
         .clear-search-btn {
             position: absolute;
-            right: 8px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             border: none;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 50%;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             color: #666;
             display: none;
             align-items: center;
@@ -744,7 +742,22 @@
             font-weight: 500;
         }
 
-        @media (max-width: 768px) {
+
+        /* 篩選區域樣式 - 方案二布局 */
+        .filters-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .filters-row .dropdown-container {
+            flex: 1;
+        }
+
+        .filters-row .dropdown-select {
+            width: 100%;
+            min-width: auto;
+        }        @media (max-width: 768px) {
             body {
                 padding: 8px;
                 background: white !important;
@@ -883,11 +896,15 @@
                 border-top: 1px solid #eee;
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
-                align-items: center;
+                gap: 14px;
+                
             }
             
-            .dropdown-container {
+            
+            .filters-row {
+                flex-direction: column;
+                gap: 10px;
+            }            .dropdown-container {
                 width: 100%;
                 max-width: 280px;
                 justify-content: center;
@@ -1826,7 +1843,7 @@
 
         <div class="controls">
             <div class="search-container">
-                <div class="dropdown-container">
+                    <div class="dropdown-container">
                     <span class="dropdown-icon">🔍</span>
                     <div class="search-input-wrapper">
                         <input type="text" id="searchInput" class="search-input" placeholder="搜尋待辦事項...">
@@ -1835,7 +1852,9 @@
                 </div>
                 <div class="search-results-info" id="searchResultsInfo"></div>
             </div>
-            <div class="dropdown-container">
+            
+            <!-- 篩選區域 - 並排一行 -->
+            <div class="filters-row">                <div class="dropdown-container">
                 <span class="dropdown-icon">📋</span>
                 <select class="dropdown-select" id="statusFilter">
                     <option value="all">狀態篩選 - 全部</option>
@@ -1843,7 +1862,7 @@
                     <option value="completed">✅ 已完成</option>
                 </select>
             </div>
-            <div class="dropdown-container">
+                <div class="dropdown-container">
                 <span class="dropdown-icon">🎯</span>
                 <select class="dropdown-select" id="priorityFilter">
                     <option value="all">優先級篩選 - 全部</option>
@@ -1853,7 +1872,7 @@
                     <option value="P3">🟢 P3 - 較低</option>
                     <option value="P4">🔵 P4 - 最低</option>
                 </select>
-            </div>
+            </div>            </div>
         </div>
 
         <div class="todo-list" id="todoList">
