@@ -668,6 +668,82 @@
             color: #3498db;
         }
 
+        /* 搜尋組件樣式 */
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 35px 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .clear-search-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: #333;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .clear-search-btn.visible {
+            display: flex;
+        }
+
+        .search-results-info {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            min-height: 16px;
+            display: flex;
+            align-items: center;
+            margin-left: 32px;
+        }
+
+        .search-results-info.highlight {
+            color: #4facfe;
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 8px;
@@ -829,6 +905,31 @@
             
             .dropdown-icon {
                 font-size: 20px;
+            }
+            
+            .search-container {
+                margin-bottom: 16px;
+            }
+            
+            .search-input {
+                min-width: auto;
+                width: 100%;
+                padding: 12px 40px 12px 12px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+            
+            .clear-search-btn {
+                width: 28px;
+                height: 28px;
+                right: 10px;
+                font-size: 14px;
+            }
+            
+            .search-results-info {
+                margin-left: 0;
+                font-size: 13px;
+                justify-content: center;
             }
             
             .todo-list {
@@ -1724,6 +1825,16 @@
         </div>
 
         <div class="controls">
+            <div class="search-container">
+                <div class="dropdown-container">
+                    <span class="dropdown-icon">🔍</span>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchInput" class="search-input" placeholder="搜尋待辦事項...">
+                        <button id="clearSearchBtn" class="clear-search-btn" title="清除搜尋">✕</button>
+                    </div>
+                </div>
+                <div class="search-results-info" id="searchResultsInfo"></div>
+            </div>
             <div class="dropdown-container">
                 <span class="dropdown-icon">📋</span>
                 <select class="dropdown-select" id="statusFilter">
@@ -1871,6 +1982,8 @@
         let todos = [];
         let currentFilter = 'all';
         let currentPriorityFilter = 'all';
+        let currentSearchTerm = '';
+        let searchDebounceTimer = null;
         
         /**
          * 調酒推薦語錄庫
@@ -2611,6 +2724,8 @@
             const addBtn = document.getElementById('addBtn');
             const statusFilter = document.getElementById('statusFilter');
             const priorityFilter = document.getElementById('priorityFilter');
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
 
             addBtn.addEventListener('click', addTodo);
             todoInput.addEventListener('keypress', function(e) {
@@ -2624,6 +2739,7 @@
                 statusFilter.addEventListener('change', function(e) {
                     currentFilter = e.target.value;
                     renderTodos();
+                    updateSearchResultsInfo();
                     console.log('Status filter changed to:', currentFilter);
                 });
             }
@@ -2633,8 +2749,96 @@
                 priorityFilter.addEventListener('change', function(e) {
                     currentPriorityFilter = e.target.value;
                     renderTodos();
+                    updateSearchResultsInfo();
                     console.log('Priority filter changed to:', currentPriorityFilter);
                 });
+            }
+
+            // 搜尋功能
+            if (searchInput) {
+                searchInput.addEventListener('input', handleSearchInput);
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        clearSearch();
+                    }
+                });
+            }
+            
+            if (clearSearchBtn) {
+                clearSearchBtn.addEventListener('click', clearSearch);
+            }
+            
+            // 全域鍵盤快捷鍵
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }
+            });
+        }
+
+        /**
+         * 處理搜尋輸入事件
+         * 使用防抖動機制避免過頻搜尋
+         */
+        function handleSearchInput() {
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            
+            // 顯示/隱藏清除按鈕
+            if (searchInput.value.trim()) {
+                clearSearchBtn.classList.add('visible');
+            } else {
+                clearSearchBtn.classList.remove('visible');
+            }
+            
+            // 防抖動搜尋
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                currentSearchTerm = searchInput.value.trim().toLowerCase();
+                renderTodos();
+                updateSearchResultsInfo();
+            }, 300);
+        }
+
+        /**
+         * 清除搜尋內容和結果
+         */
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            
+            searchInput.value = '';
+            currentSearchTerm = '';
+            clearSearchBtn.classList.remove('visible');
+            renderTodos();
+            updateSearchResultsInfo();
+            searchInput.focus();
+        }
+
+        /**
+         * 更新搜尋結果資訊顯示
+         */
+        function updateSearchResultsInfo() {
+            const searchResultsInfo = document.getElementById('searchResultsInfo');
+            
+            if (!currentSearchTerm) {
+                searchResultsInfo.textContent = '';
+                searchResultsInfo.classList.remove('highlight');
+                return;
+            }
+            
+            const filteredTodos = getFilteredTodos();
+            const resultCount = filteredTodos.length;
+            
+            if (resultCount === 0) {
+                searchResultsInfo.textContent = '沒有找到符合的待辦事項';
+                searchResultsInfo.classList.remove('highlight');
+            } else {
+                searchResultsInfo.textContent = `找到 ${resultCount} 個結果`;
+                searchResultsInfo.classList.add('highlight');
             }
         }
 
@@ -2792,6 +2996,13 @@
          */
         function getFilteredTodos() {
             let filtered = todos;
+
+            // 按搜尋詞篩選
+            if (currentSearchTerm) {
+                filtered = filtered.filter(todo => 
+                    todo.text.toLowerCase().includes(currentSearchTerm)
+                );
+            }
 
             // 按完成狀態篩選
             switch (currentFilter) {
